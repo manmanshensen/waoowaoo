@@ -1,6 +1,6 @@
 import { safeParseJsonArray, safeParseJsonObject } from '@/lib/json-repair'
 import { buildCharactersIntroduction } from '@/lib/constants'
-import { normalizeAnyError } from '@/lib/errors/normalize'
+import { toAiRuntimeError } from '@/lib/ai-runtime/errors'
 import { createScopedLogger } from '@/lib/logging/core'
 import { createClipContentMatcher, type ClipMatchLevel } from './clip-matching'
 import { mapWithConcurrency } from '@/lib/async/map-with-concurrency'
@@ -194,7 +194,7 @@ async function runStepWithRetry<T>(
       return { output, parsed }
     } catch (error) {
       lastError = error instanceof Error ? error : new Error(String(error))
-      const normalizedError = normalizeAnyError(error, { context: 'worker' })
+      const normalizedError = toAiRuntimeError(error)
       const lowerMessage = normalizedError.message.toLowerCase()
       const shouldRetry = attempt < MAX_STEP_ATTEMPTS
         && (

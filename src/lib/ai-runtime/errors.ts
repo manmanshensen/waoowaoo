@@ -4,6 +4,8 @@ import type { AiRuntimeError, AiRuntimeErrorCode } from './types'
 function toCode(value: string): AiRuntimeErrorCode {
   if (value === 'NETWORK_ERROR') return 'NETWORK_ERROR'
   if (value === 'RATE_LIMIT') return 'RATE_LIMIT'
+  if (value === 'EXTERNAL_ERROR') return 'NETWORK_ERROR'
+  if (value === 'GENERATION_FAILED') return 'NETWORK_ERROR'
   if (value === 'EMPTY_RESPONSE') return 'EMPTY_RESPONSE'
   if (value === 'GENERATION_TIMEOUT') return 'TIMEOUT'
   if (value === 'SENSITIVE_CONTENT') return 'SENSITIVE_CONTENT'

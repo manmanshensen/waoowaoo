@@ -6,6 +6,7 @@ import { MediaImageWithLoading } from '@/components/media/MediaImageWithLoading'
 import { AppIcon } from '@/components/ui/icons'
 
 interface CharacterCreationPreviewProps {
+  variant?: 'character' | 'location'
   referenceImagesBase64: string[]
   fileInputRef: RefObject<HTMLInputElement | null>
   onDrop: (event: DragEvent<HTMLDivElement>) => void
@@ -18,6 +19,7 @@ const PhotoIcon = ({ className }: { className?: string }) => (
 )
 
 export default function CharacterCreationPreview({
+  variant = 'character',
   referenceImagesBase64,
   fileInputRef,
   onDrop,
@@ -25,6 +27,7 @@ export default function CharacterCreationPreview({
   onClearReference,
 }: CharacterCreationPreviewProps) {
   const t = useTranslations('assetModal')
+  const translationKey = variant === 'location' ? 'location' : 'character'
 
   return (
     <div
@@ -66,14 +69,14 @@ export default function CharacterCreationPreview({
             ))}
           </div>
           <p className="text-xs text-center text-[var(--glass-text-secondary)]">
-            {t('character.selectedCount', { count: referenceImagesBase64.length })}
+            {t(`${translationKey}.selectedCount`, { count: referenceImagesBase64.length })}
           </p>
         </div>
       ) : (
         <>
           <PhotoIcon className="w-10 h-10 text-[var(--glass-text-tertiary)] mb-2" />
-          <p className="text-sm text-[var(--glass-text-secondary)]">{t('character.dropOrClick')}</p>
-          <p className="text-xs text-[var(--glass-text-tertiary)] mt-1">{t('character.maxReferenceImages')}</p>
+          <p className="text-sm text-[var(--glass-text-secondary)]">{t(`${translationKey}.dropOrClick`)}</p>
+          <p className="text-xs text-[var(--glass-text-tertiary)] mt-1">{t(`${translationKey}.maxReferenceImages`)}</p>
         </>
       )}
     </div>

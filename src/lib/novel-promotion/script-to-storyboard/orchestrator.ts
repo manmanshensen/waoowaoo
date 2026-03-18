@@ -1,6 +1,6 @@
 import { safeParseJsonArray } from '@/lib/json-repair'
+import { toAiRuntimeError } from '@/lib/ai-runtime/errors'
 import { buildCharactersIntroduction } from '@/lib/constants'
-import { normalizeAnyError } from '@/lib/errors/normalize'
 import { createScopedLogger } from '@/lib/logging/core'
 import { mapWithConcurrency } from '@/lib/async/map-with-concurrency'
 import {
@@ -229,7 +229,7 @@ async function runStepWithRetry<T>(
       return { output, parsed }
     } catch (error) {
       lastError = error instanceof Error ? error : new Error(String(error))
-      const normalizedError = normalizeAnyError(error, { context: 'worker' })
+      const normalizedError = toAiRuntimeError(error)
       const shouldRetry = attempt < MAX_STEP_ATTEMPTS
         && shouldRetryStepError(error, normalizedError.message, normalizedError.retryable)
 

@@ -8,6 +8,8 @@
  * 用于内部 API 调用、webhook 回调等场景
  */
 export function getBaseUrl(): string {
+    const internalBaseUrl = process.env.APP_INTERNAL_BASE_URL?.trim()
+    if (internalBaseUrl) return internalBaseUrl
     return process.env.NEXTAUTH_URL || 'http://localhost:3000'
 }
 

@@ -1,13 +1,15 @@
 'use client'
 import { logError as _ulogError } from '@/lib/logging/core'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useTranslations } from 'next-intl'
 import { AppIcon } from '@/components/ui/icons'
 import { ART_STYLES } from '@/lib/constants'
 import { shouldShowError } from '@/lib/error-utils'
 import TaskStatusInline from '@/components/task/TaskStatusInline'
 import { resolveTaskPresentationState } from '@/lib/task/presentation'
+import CharacterCreationPreview from './character-creation/CharacterCreationPreview'
+import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import {
     useAiCreateProjectLocation,
     useAiDesignLocation,
@@ -15,6 +17,8 @@ import {
     useGenerateLocationImage,
     useCreateProjectLocation,
     useGenerateProjectLocationImage,
+    useUploadLocationImage,
+    useUploadProjectLocationImage,
 } from '@/lib/query/hooks'
 import { useImageGenerationCount } from '@/lib/image-generation/use-image-generation-count'
 import ImageGenerationInlineCountButton from '@/components/image-generation/ImageGenerationInlineCountButton'
@@ -50,9 +54,11 @@ export function LocationCreationModal({
     const aiDesignAssetHubLocation = useAiDesignLocation()
     const createAssetHubLocation = useCreateAssetHubLocation()
     const generateAssetHubLocation = useGenerateLocationImage()
+    const uploadAssetHubLocationImage = useUploadLocationImage()
     const aiCreateProjectLocation = useAiCreateProjectLocation(projectId || '')
     const createProjectLocation = useCreateProjectLocation(projectId || '')
     const generateProjectLocation = useGenerateProjectLocationImage(projectId || '')
+    const uploadProjectLocationImage = useUploadProjectLocationImage(projectId || '')
     const {
         count: locationGenerationCount,
         setCount: setLocationGenerationCount,
@@ -63,6 +69,10 @@ export function LocationCreationModal({
     const [description, setDescription] = useState('')
     const [aiInstruction, setAiInstruction] = useState('')
     const [artStyle, setArtStyle] = useState('american-comic')
+    const [createMode, setCreateMode] = useState<'description' | 'reference'>('description')
+    const [referenceImagesBase64, setReferenceImagesBase64] = useState<string[]>([])
+    const [referenceImageFiles, setReferenceImageFiles] = useState<File[]>([])
+    const fileInputRef = useRef<HTMLInputElement>(null)
 
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [isAiDesigning, setIsAiDesigning] = useState(false)
@@ -98,6 +108,46 @@ export function LocationCreationModal({
         return null
     }
 
+    const handleFileSelect = useCallback(async (files: FileList | File[]) => {
+        const fileArray = Array.from(files).filter((file) => file.type.startsWith('image/'))
+        if (fileArray.length === 0) return
+
+        const remaining = 5 - referenceImagesBase64.length
+        const toAdd = fileArray.slice(0, remaining)
+        setReferenceImageFiles((prev) => [...prev, ...toAdd].slice(0, 5))
+
+        for (const file of toAdd) {
+            const reader = new FileReader()
+            reader.onload = (e) => {
+                const base64 = e.target?.result as string
+                setReferenceImagesBase64((prev) => {
+                    if (prev.length >= 5) return prev
+                    if (prev.includes(base64)) return prev
+                    return [...prev, base64]
+                })
+            }
+            reader.readAsDataURL(file)
+        }
+    }, [referenceImagesBase64.length])
+
+    const handleDrop = useCallback((e: React.DragEvent<HTMLDivElement>) => {
+        e.preventDefault()
+        e.stopPropagation()
+        if (e.dataTransfer.files.length > 0) {
+            void handleFileSelect(e.dataTransfer.files)
+        }
+    }, [handleFileSelect])
+
+    const handleClearReference = useCallback((index?: number) => {
+        if (typeof index === 'number') {
+            setReferenceImageFiles((prev) => prev.filter((_, i) => i !== index))
+            setReferenceImagesBase64((prev) => prev.filter((_, i) => i !== index))
+            return
+        }
+        setReferenceImageFiles([])
+        setReferenceImagesBase64([])
+    }, [])
+
     // ESC 键关闭
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
@@ -108,6 +158,30 @@ export function LocationCreationModal({
         document.addEventListener('keydown', handleKeyDown)
         return () => document.removeEventListener('keydown', handleKeyDown)
     }, [onClose, isSubmitting, isAiDesigning])
+
+    useEffect(() => {
+        const handleGlobalPaste = (e: ClipboardEvent) => {
+            if (createMode !== 'reference') return
+
+            const target = e.target as HTMLElement
+            if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') return
+
+            const items = e.clipboardData?.items
+            if (!items) return
+
+            for (let i = 0; i < items.length; i++) {
+                if (!items[i].type.startsWith('image/')) continue
+                const file = items[i].getAsFile()
+                if (!file) continue
+                e.preventDefault()
+                void handleFileSelect([file])
+                break
+            }
+        }
+
+        document.addEventListener('paste', handleGlobalPaste)
+        return () => document.removeEventListener('paste', handleGlobalPaste)
+    }, [createMode, handleFileSelect])
 
     // AI 设计描述
     const handleAiDesign = async () => {
@@ -142,10 +216,11 @@ export function LocationCreationModal({
 
     // 提交创建
     const handleSubmit = async () => {
-        if (!name.trim() || !description.trim()) return
+        if (!name.trim() || (createMode === 'description' && !description.trim())) return
 
         try {
             setIsSubmitting(true)
+            const resolvedDescription = description.trim() || name.trim()
 
             const body: {
                 name: string
@@ -154,7 +229,7 @@ export function LocationCreationModal({
                 folderId?: string | null
             } = {
                 name: name.trim(),
-                description: description.trim(),
+                description: resolvedDescription,
                 artStyle
             }
 
@@ -244,6 +319,65 @@ export function LocationCreationModal({
         }
     }
 
+    const handleSubmitAndUpload = async () => {
+        if (!name.trim() || referenceImageFiles.length === 0) return
+
+        try {
+            setIsSubmitting(true)
+            const resolvedDescription = description.trim() || name.trim()
+
+            if (mode === 'asset-hub') {
+                const result = await createAssetHubLocation.mutateAsync({
+                    name: name.trim(),
+                    summary: resolvedDescription,
+                    artStyle,
+                    folderId: folderId ?? null,
+                    count: Math.max(referenceImageFiles.length, 1),
+                }) as CreatedLocationResponse
+                const createdLocationId = result.location?.id
+                if (!createdLocationId) throw new Error(t('errors.createFailed'))
+
+                for (const [index, file] of referenceImageFiles.entries()) {
+                    await uploadAssetHubLocationImage.mutateAsync({
+                        file,
+                        locationId: createdLocationId,
+                        imageIndex: index,
+                        labelText: name.trim(),
+                    })
+                }
+            } else {
+                const result = await createProjectLocation.mutateAsync({
+                    name: name.trim(),
+                    description: resolvedDescription,
+                    artStyle,
+                    count: Math.max(referenceImageFiles.length, 1),
+                }) as CreatedLocationResponse
+                const createdLocationId = result.location?.id
+                if (!createdLocationId) throw new Error(t('errors.createFailed'))
+
+                for (const [index, file] of referenceImageFiles.entries()) {
+                    await uploadProjectLocationImage.mutateAsync({
+                        file,
+                        locationId: createdLocationId,
+                        imageIndex: index,
+                        labelText: name.trim(),
+                    })
+                }
+            }
+
+            onSuccess()
+            onClose()
+        } catch (error: unknown) {
+            if (getErrorStatus(error) === 402) {
+                alert(getErrorMessage(error, t('errors.insufficientBalance')))
+            } else if (shouldShowError(error)) {
+                alert(getErrorMessage(error, t('errors.createFailed')))
+            }
+        } finally {
+            setIsSubmitting(false)
+        }
+    }
+
     // 处理点击遮罩层关闭
     const handleBackdropClick = (e: React.MouseEvent<HTMLDivElement>) => {
         if (e.target === e.currentTarget && !isSubmitting && !isAiDesigning) {
@@ -272,6 +406,17 @@ export function LocationCreationModal({
                     </div>
 
                     <div className="space-y-5">
+                        <div className="mb-1">
+                            <SegmentedControl
+                                options={[
+                                    { value: 'description', label: <span>{t('location.modeDescription')}</span> },
+                                    { value: 'reference', label: <span>{t('location.modeReference')}</span> },
+                                ]}
+                                value={createMode}
+                                onChange={(value) => setCreateMode(value as 'description' | 'reference')}
+                            />
+                        </div>
+
                         {/* 场景名称 */}
                         <div className="space-y-2">
                             <label className="glass-field-label block">
@@ -309,51 +454,75 @@ export function LocationCreationModal({
                             </div>
                         )}
 
-                        {/* AI 设计区域 */}
-                        <div className="glass-surface-soft rounded-xl p-4 space-y-3 border border-[var(--glass-stroke-base)]">
-                            <div className="flex items-center gap-2 text-sm font-medium text-[var(--glass-tone-info-fg)]">
-                                <SparklesIcon className="w-4 h-4" />
-                                <span>{t('aiDesign.title')} {t('common.optional')}</span>
+                        {createMode === 'description' ? (
+                            <div className="glass-surface-soft rounded-xl p-4 space-y-3 border border-[var(--glass-stroke-base)]">
+                                <div className="flex items-center gap-2 text-sm font-medium text-[var(--glass-tone-info-fg)]">
+                                    <SparklesIcon className="w-4 h-4" />
+                                    <span>{t('aiDesign.title')} {t('common.optional')}</span>
+                                </div>
+                                <div className="flex gap-2">
+                                    <input
+                                        type="text"
+                                        value={aiInstruction}
+                                        onChange={(e) => setAiInstruction(e.target.value)}
+                                        placeholder={t('aiDesign.placeholderLocation')}
+                                        className="glass-input-base flex-1 px-3 py-2 text-sm"
+                                        disabled={isAiDesigning}
+                                        onKeyDown={(e) => {
+                                            if (e.key === 'Enter' && !e.shiftKey) {
+                                                e.preventDefault()
+                                                handleAiDesign()
+                                            }
+                                        }}
+                                    />
+                                    <button
+                                        onClick={handleAiDesign}
+                                        disabled={isAiDesigning || !aiInstruction.trim()}
+                                        className="glass-btn-base glass-btn-tone-info px-4 py-2 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 text-sm whitespace-nowrap"
+                                    >
+                                        {isAiDesigning ? (
+                                            <TaskStatusInline state={aiDesigningState} className="text-white [&>span]:text-white [&_svg]:text-white" />
+                                        ) : (
+                                            <>
+                                                <SparklesIcon className="w-4 h-4" />
+                                                <span>{t('aiDesign.generate')}</span>
+                                            </>
+                                        )}
+                                    </button>
+                                </div>
+                                <p className="glass-field-hint">
+                                    {t('aiDesign.tip')}
+                                </p>
                             </div>
-                            <div className="flex gap-2">
-                                <input
-                                    type="text"
-                                    value={aiInstruction}
-                                    onChange={(e) => setAiInstruction(e.target.value)}
-                                    placeholder={t('aiDesign.placeholderLocation')}
-                                    className="glass-input-base flex-1 px-3 py-2 text-sm"
-                                    disabled={isAiDesigning}
-                                    onKeyDown={(e) => {
-                                        if (e.key === 'Enter' && !e.shiftKey) {
-                                            e.preventDefault()
-                                            handleAiDesign()
-                                        }
-                                    }}
+                        ) : (
+                            <div className="glass-surface-soft rounded-xl p-4 space-y-3 border border-[var(--glass-stroke-base)]">
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2 text-sm font-medium text-[var(--glass-tone-info-fg)]">
+                                        <AppIcon name="image" className="w-4 h-4" />
+                                        <span>{t('location.uploadReference')}</span>
+                                    </div>
+                                    <span className="text-xs text-[var(--glass-text-tertiary)]">{t('location.pasteHint')}</span>
+                                </div>
+                                <p className="glass-field-hint">
+                                    {t('location.referenceTip')}
+                                </p>
+                                <CharacterCreationPreview
+                                    variant="location"
+                                    referenceImagesBase64={referenceImagesBase64}
+                                    fileInputRef={fileInputRef}
+                                    onDrop={handleDrop}
+                                    onFileSelect={(files) => void handleFileSelect(files)}
+                                    onClearReference={handleClearReference}
                                 />
-                                <button
-                                    onClick={handleAiDesign}
-                                    disabled={isAiDesigning || !aiInstruction.trim()}
-                                    className="glass-btn-base glass-btn-tone-info px-4 py-2 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 text-sm whitespace-nowrap"
-                                >
-                                    {isAiDesigning ? (
-                                        <TaskStatusInline state={aiDesigningState} className="text-white [&>span]:text-white [&_svg]:text-white" />
-                                    ) : (
-                                        <>
-                                            <SparklesIcon className="w-4 h-4" />
-                                            <span>{t('aiDesign.generate')}</span>
-                                        </>
-                                    )}
-                                </button>
                             </div>
-                            <p className="glass-field-hint">
-                                {t('aiDesign.tip')}
-                            </p>
-                        </div>
+                        )}
 
                         {/* 场景描述 */}
                         <div className="space-y-2">
                             <label className="glass-field-label block">
-                                {t('location.description')} <span className="text-[var(--glass-tone-danger-fg)]">*</span>
+                                {t('location.description')}
+                                {createMode === 'description' && <span className="text-[var(--glass-tone-danger-fg)]"> *</span>}
+                                {createMode === 'reference' && <span className="text-[var(--glass-text-tertiary)]"> {t('common.optional')}</span>}
                             </label>
                             <textarea
                                 value={description}
@@ -377,7 +546,7 @@ export function LocationCreationModal({
                     </button>
                     <button
                         onClick={handleSubmit}
-                        disabled={isSubmitting || !name.trim() || !description.trim()}
+                        disabled={isSubmitting || !name.trim() || (createMode === 'description' && !description.trim())}
                         className="glass-btn-base glass-btn-secondary px-4 py-2 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed text-sm flex items-center gap-2"
                     >
                         {isSubmitting ? (
@@ -386,19 +555,29 @@ export function LocationCreationModal({
                             <span>{mode === 'asset-hub' ? t('common.addOnlyToAssetHubLocation') : t('common.addOnlyLocation')}</span>
                         )}
                     </button>
-                    <ImageGenerationInlineCountButton
-                        prefix={<span>{t('common.addAndGeneratePrefix')}</span>}
-                        suffix={<span>{t('common.generateCountSuffix')}</span>}
-                        value={locationGenerationCount}
-                        options={getImageGenerationCountOptions('location')}
-                        onValueChange={setLocationGenerationCount}
-                        onClick={handleSubmitAndGenerate}
-                        actionDisabled={!name.trim() || !description.trim()}
-                        selectDisabled={isSubmitting}
-                        ariaLabel={t('common.selectGenerateCount')}
-                        className="glass-btn-base glass-btn-primary flex items-center justify-center gap-1 rounded-lg px-4 py-2 text-sm disabled:opacity-40 disabled:cursor-not-allowed"
-                        selectClassName="appearance-none bg-transparent border-0 pl-0 pr-3 text-sm font-semibold text-current outline-none cursor-pointer leading-none transition-colors"
-                    />
+                    {createMode === 'reference' ? (
+                        <button
+                            onClick={handleSubmitAndUpload}
+                            disabled={isSubmitting || !name.trim() || referenceImageFiles.length === 0}
+                            className="glass-btn-base glass-btn-primary px-4 py-2 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                        >
+                            {isSubmitting ? t('common.adding') : t('common.addAndUploadReference')}
+                        </button>
+                    ) : (
+                        <ImageGenerationInlineCountButton
+                            prefix={<span>{t('common.addAndGeneratePrefix')}</span>}
+                            suffix={<span>{t('common.generateCountSuffix')}</span>}
+                            value={locationGenerationCount}
+                            options={getImageGenerationCountOptions('location')}
+                            onValueChange={setLocationGenerationCount}
+                            onClick={handleSubmitAndGenerate}
+                            actionDisabled={!name.trim() || !description.trim()}
+                            selectDisabled={isSubmitting}
+                            ariaLabel={t('common.selectGenerateCount')}
+                            className="glass-btn-base glass-btn-primary flex items-center justify-center gap-1 rounded-lg px-4 py-2 text-sm disabled:opacity-40 disabled:cursor-not-allowed"
+                            selectClassName="appearance-none bg-transparent border-0 pl-0 pr-3 text-sm font-semibold text-current outline-none cursor-pointer leading-none transition-colors"
+                        />
+                    )}
                 </div>
             </div>
         </div>

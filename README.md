@@ -67,7 +67,7 @@ docker compose up -d
 ```bash
 git clone https://github.com/saturndec/waoowaoo.git
 cd waoowaoo
-docker compose up -d
+docker compose up -d --build
 ```
 
 更新版本：

@@ -3,6 +3,8 @@ import { StorageConfigError } from './errors'
 export const DEFAULT_SIGNED_URL_EXPIRES_SECONDS = 24 * 60 * 60
 
 export function resolveBaseUrl(): string {
+  const internalBaseUrl = process.env.APP_INTERNAL_BASE_URL?.trim()
+  if (internalBaseUrl) return internalBaseUrl
   return process.env.NEXTAUTH_URL || 'http://localhost:3000'
 }
 

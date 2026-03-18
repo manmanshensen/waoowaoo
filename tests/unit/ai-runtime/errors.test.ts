@@ -31,4 +31,14 @@ describe('toAiRuntimeError empty response mapping', () => {
     expect(runtimeError.code).toBe('RATE_LIMIT')
     expect(runtimeError.retryable).toBe(true)
   })
+
+  it('maps provider 503 unavailable to retryable runtime error', () => {
+    const runtimeError = toAiRuntimeError({
+      message:
+        'got status: UNAVAILABLE. {"error":{"code":503,"message":"This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.","status":"UNAVAILABLE"}}',
+    })
+
+    expect(runtimeError.code).toBe('NETWORK_ERROR')
+    expect(runtimeError.retryable).toBe(true)
+  })
 })

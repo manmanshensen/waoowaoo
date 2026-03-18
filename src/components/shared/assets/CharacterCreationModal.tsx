@@ -37,7 +37,8 @@ export function CharacterCreationModal({
   const [aiInstruction, setAiInstruction] = useState('')
   const [artStyle, setArtStyle] = useState('american-comic')
   const [referenceImagesBase64, setReferenceImagesBase64] = useState<string[]>([])
-  const [referenceSubMode, setReferenceSubMode] = useState<'direct' | 'extract'>('direct')
+  const [referenceImageFiles, setReferenceImageFiles] = useState<File[]>([])
+  const [referenceSubMode, setReferenceSubMode] = useState<'upload' | 'direct' | 'extract'>('upload')
   const [isSubAppearance, setIsSubAppearance] = useState(false)
   const [selectedCharacterId, setSelectedCharacterId] = useState('')
   const [changeReason, setChangeReason] = useState('')
@@ -77,6 +78,7 @@ export function CharacterCreationModal({
     aiInstruction,
     artStyle,
     referenceImagesBase64,
+    referenceImageFiles,
     referenceSubMode,
     isSubAppearance,
     selectedCharacterId,
@@ -93,6 +95,8 @@ export function CharacterCreationModal({
 
     const remaining = 5 - referenceImagesBase64.length
     const toAdd = fileArray.slice(0, remaining)
+
+    setReferenceImageFiles((prev) => [...prev, ...toAdd].slice(0, 5))
 
     for (const file of toAdd) {
       const reader = new FileReader()
@@ -152,9 +156,11 @@ export function CharacterCreationModal({
 
   const handleClearReference = (index?: number) => {
     if (typeof index === 'number') {
+      setReferenceImageFiles((prev) => prev.filter((_, i) => i !== index))
       setReferenceImagesBase64((prev) => prev.filter((_, i) => i !== index))
       return
     }
+    setReferenceImageFiles([])
     setReferenceImagesBase64([])
   }
 
@@ -226,19 +232,29 @@ export function CharacterCreationModal({
             {t('common.cancel')}
           </button>
           {createMode === 'reference' ? (
-            <ImageGenerationInlineCountButton
-              prefix={<span>{t('character.useReferenceGeneratePrefix')}</span>}
-              suffix={<span>{t('character.generateCountSuffix')}</span>}
-              value={referenceCharacterGenerationCount}
-              options={getImageGenerationCountOptions('reference-to-character')}
-              onValueChange={setReferenceCharacterGenerationCount}
-              onClick={() => { void handleCreateWithReference() }}
-              actionDisabled={!name.trim() || referenceImagesBase64.length === 0}
-              selectDisabled={isSubmitting}
-              ariaLabel={t('character.selectReferenceGenerateCount')}
-              className="glass-btn-base glass-btn-primary flex items-center justify-center gap-1 rounded-lg px-4 py-2 text-sm disabled:opacity-40 disabled:cursor-not-allowed"
-              selectClassName="appearance-none bg-transparent border-0 pl-0 pr-3 text-sm font-semibold text-current outline-none cursor-pointer leading-none transition-colors"
-            />
+            referenceSubMode === 'upload' ? (
+              <button
+                onClick={() => { void handleCreateWithReference() }}
+                disabled={!name.trim() || referenceImageFiles.length === 0 || isSubmitting}
+                className="glass-btn-base glass-btn-primary px-4 py-2 rounded-lg text-sm disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                {isSubmitting ? t('common.adding') : t('common.addAndUploadReference')}
+              </button>
+            ) : (
+              <ImageGenerationInlineCountButton
+                prefix={<span>{t('character.useReferenceGeneratePrefix')}</span>}
+                suffix={<span>{t('character.generateCountSuffix')}</span>}
+                value={referenceCharacterGenerationCount}
+                options={getImageGenerationCountOptions('reference-to-character')}
+                onValueChange={setReferenceCharacterGenerationCount}
+                onClick={() => { void handleCreateWithReference() }}
+                actionDisabled={!name.trim() || referenceImagesBase64.length === 0}
+                selectDisabled={isSubmitting}
+                ariaLabel={t('character.selectReferenceGenerateCount')}
+                className="glass-btn-base glass-btn-primary flex items-center justify-center gap-1 rounded-lg px-4 py-2 text-sm disabled:opacity-40 disabled:cursor-not-allowed"
+                selectClassName="appearance-none bg-transparent border-0 pl-0 pr-3 text-sm font-semibold text-current outline-none cursor-pointer leading-none transition-colors"
+              />
+            )
           ) : isSubAppearance ? (
             <button
               onClick={() => { void handleSubmit() }}

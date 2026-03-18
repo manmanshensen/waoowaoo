@@ -28,8 +28,8 @@ interface CharacterCreationFormProps {
   artStyle: string
   setArtStyle: (value: string) => void
   referenceImagesBase64: string[]
-  referenceSubMode: 'direct' | 'extract'
-  setReferenceSubMode: (mode: 'direct' | 'extract') => void
+  referenceSubMode: 'upload' | 'direct' | 'extract'
+  setReferenceSubMode: (mode: 'upload' | 'direct' | 'extract') => void
   isSubAppearance: boolean
   setIsSubAppearance: (value: boolean) => void
   selectedCharacterId: string
@@ -207,13 +207,20 @@ export default function CharacterCreationForm({
             <SegmentedControl
               className="flex-1"
               options={[
+                { value: 'upload', label: t('character.directUpload') },
                 { value: 'direct', label: t('character.directGenerate') },
                 { value: 'extract', label: t('character.extractPrompt') },
               ]}
               value={referenceSubMode}
-              onChange={(val) => setReferenceSubMode(val as 'direct' | 'extract')}
+              onChange={(val) => setReferenceSubMode(val as 'upload' | 'direct' | 'extract')}
             />
           </div>
+
+          {referenceSubMode === 'upload' && (
+            <p className="glass-field-hint">
+              {t('character.directUploadDesc')}
+            </p>
+          )}
 
           {referenceSubMode === 'extract' && (
             <button

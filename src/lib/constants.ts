@@ -140,6 +140,13 @@ export const ART_STYLES = [
     promptEn: 'Modern premium Chinese comic style, rich details, clean sharp line art, full texture, ultra-clear 2D anime aesthetics.'
   },
   {
+    value: '3d-chinese-anime',
+    label: '3D国漫',
+    preview: '3',
+    promptZh: '高质量3D国漫风格，东方审美，国创动画电影质感，三维角色建模，细腻面部与服饰材质，电影级光影，体积光，层次分明，细节丰富，高清渲染。',
+    promptEn: 'High-quality 3D Chinese anime style, Eastern aesthetics, Chinese animated feature-film look, detailed 3D character modeling, refined facial and costume materials, cinematic lighting, volumetric light, rich depth, and high-definition rendering.'
+  },
+  {
     value: 'japanese-anime',
     label: '日系动漫风',
     preview: '日',

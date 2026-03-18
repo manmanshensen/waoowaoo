@@ -13,6 +13,8 @@ import {
   useCreateProjectCharacterAppearance,
   useExtractAssetHubReferenceCharacterDescription,
   useExtractProjectReferenceCharacterDescription,
+  useUploadCharacterImage,
+  useUploadProjectCharacterImage,
   useUploadAssetHubTempMedia,
   useUploadProjectTempMedia,
 } from '@/lib/query/hooks'
@@ -29,7 +31,8 @@ interface UseCharacterCreationSubmitParams {
   aiInstruction: string
   artStyle: string
   referenceImagesBase64: string[]
-  referenceSubMode: 'direct' | 'extract'
+  referenceImageFiles: File[]
+  referenceSubMode: 'upload' | 'direct' | 'extract'
   isSubAppearance: boolean
   selectedCharacterId: string
   changeReason: string
@@ -53,6 +56,7 @@ export function useCharacterCreationSubmit({
   aiInstruction,
   artStyle,
   referenceImagesBase64,
+  referenceImageFiles,
   referenceSubMode,
   isSubAppearance,
   selectedCharacterId,
@@ -69,6 +73,8 @@ export function useCharacterCreationSubmit({
 
   const uploadAssetHubTemp = useUploadAssetHubTempMedia()
   const uploadProjectTemp = useUploadProjectTempMedia()
+  const uploadAssetHubCharacterImage = useUploadCharacterImage()
+  const uploadProjectCharacterImage = useUploadProjectCharacterImage(projectId ?? '')
   const aiDesignAssetHubCharacter = useAiDesignCharacter()
   const aiCreateProjectCharacter = useAiCreateProjectCharacter(projectId ?? '')
   const extractAssetHubDescription = useExtractAssetHubReferenceCharacterDescription()
@@ -142,6 +148,61 @@ export function useCharacterCreationSubmit({
 
     try {
       setIsSubmitting(true)
+
+      if (referenceSubMode === 'upload') {
+        const fallbackDescription = description.trim() || t('character.defaultDescription', { name: name.trim() })
+
+        if (mode === 'asset-hub') {
+          const result = await createAssetHubCharacter.mutateAsync({
+            name: name.trim(),
+            description: fallbackDescription,
+            folderId: folderId ?? null,
+            artStyle,
+          }) as CreatedCharacterResponse
+          const createdCharacterId = result.character?.id
+          const createdAppearanceIndex = result.character?.appearances?.[0]?.appearanceIndex
+
+          if (!createdCharacterId || createdAppearanceIndex === undefined) {
+            throw new Error(t('errors.createFailed'))
+          }
+
+          for (const [index, file] of referenceImageFiles.entries()) {
+            await uploadAssetHubCharacterImage.mutateAsync({
+              file,
+              characterId: createdCharacterId,
+              appearanceIndex: createdAppearanceIndex,
+              imageIndex: index,
+              labelText: `${name.trim()} - 初始形象`,
+            })
+          }
+        } else {
+          const result = await createProjectCharacter.mutateAsync({
+            name: name.trim(),
+            description: fallbackDescription,
+          }) as CreatedCharacterResponse
+          const createdCharacterId = result.character?.id
+          const createdAppearanceId = result.character?.appearances?.[0]?.id
+
+          if (!createdCharacterId || !createdAppearanceId) {
+            throw new Error(t('errors.createFailed'))
+          }
+
+          for (const [index, file] of referenceImageFiles.entries()) {
+            await uploadProjectCharacterImage.mutateAsync({
+              file,
+              characterId: createdCharacterId,
+              appearanceId: createdAppearanceId,
+              imageIndex: index,
+              labelText: `${name.trim()} - 初始形象`,
+            })
+          }
+        }
+
+        onSuccess()
+        onClose()
+        return
+      }
+
       const referenceImageUrls = await uploadReferenceImages()
 
       let finalDescription = description.trim()
@@ -195,9 +256,12 @@ export function useCharacterCreationSubmit({
     name,
     onClose,
     onSuccess,
+    referenceImageFiles,
     referenceImagesBase64.length,
     referenceSubMode,
     t,
+    uploadAssetHubCharacterImage,
+    uploadProjectCharacterImage,
     uploadReferenceImages,
   ])
 
