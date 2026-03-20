@@ -2,10 +2,10 @@
  * Google Veo 视频生成器
  */
 
-import { GoogleGenAI } from '@google/genai'
 import { BaseVideoGenerator, VideoGenerateParams, GenerateResult } from '../base'
 import { getProviderConfig } from '@/lib/api-config'
 import { normalizeToBase64ForGeneration } from '@/lib/media/outbound-image'
+import { createGoogleGenAIClient } from '@/lib/google-auth'
 
 interface GoogleVeoOptions {
     modelId?: string
@@ -50,7 +50,7 @@ export class GoogleVeoVideoGenerator extends BaseVideoGenerator {
         const { userId, imageUrl, prompt = '', options = {} } = params
 
         const { apiKey } = await getProviderConfig(userId, this.providerId)
-        const ai = new GoogleGenAI({ apiKey })
+        const ai = createGoogleGenAIClient(apiKey)
 
         const {
             modelId = 'veo-3.1-generate-preview',
