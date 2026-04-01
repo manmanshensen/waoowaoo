@@ -68,6 +68,10 @@ export const queueRedis = singleton.queue || (singleton.queue = createQueueRedis
 export function createSubscriber() {
   const client = new Redis({
     ...buildBaseConfig(),
+    // Pub/Sub connections can reconnect while already subscribed.
+    // Disabling ready checks avoids ioredis issuing normal commands
+    // like INFO against a connection that is already in subscriber mode.
+    enableReadyCheck: false,
     maxRetriesPerRequest: null,
   })
   onConnectLog('sub', client)
