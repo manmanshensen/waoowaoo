@@ -46,6 +46,7 @@ export const POST = apiHandler(async (
     description,
     location,
     characters,
+    props,
     srtStart,
     srtEnd,
     duration,
@@ -58,6 +59,9 @@ export const POST = apiHandler(async (
   }
 
   const newPanel = await prisma.$transaction(async (tx) => {
+    const panelModel = tx.novelPromotionPanel as unknown as {
+      create: (args: { data: Record<string, unknown> }) => Promise<unknown>
+    }
     const storyboard = await tx.novelPromotionStoryboard.findUnique({
       where: { id: storyboardId },
       include: {
@@ -116,7 +120,7 @@ export const POST = apiHandler(async (
       newPanelIndex = maxPanelIndex + 1
     }
 
-    const createdPanel = await tx.novelPromotionPanel.create({
+    const createdPanel = await panelModel.create({
       data: {
         storyboardId,
         panelIndex: newPanelIndex,
@@ -126,6 +130,7 @@ export const POST = apiHandler(async (
         description: description ?? null,
         location: location ?? null,
         characters: characters ?? null,
+        props: props ?? null,
         srtStart: srtStart ?? null,
         srtEnd: srtEnd ?? null,
         duration: duration ?? null,
@@ -262,6 +267,9 @@ export const PATCH = apiHandler(async (
   if (isErrorResponse(authResult)) return authResult
 
   const body = await request.json()
+  const panelModel = prisma.novelPromotionPanel as unknown as {
+    create: (args: { data: Record<string, unknown> }) => Promise<unknown>
+  }
   const { panelId, storyboardId, panelIndex, videoPrompt, firstLastFramePrompt } = body
 
   // 🔥 方式1：通过 panelId 直接更新（优先）
@@ -328,7 +336,7 @@ export const PATCH = apiHandler(async (
   // 如果 Panel 不存在，创建它（Panel 表是唯一数据源）
   if (updatedPanel.count === 0) {
     // 创建新的 Panel 记录
-    await prisma.novelPromotionPanel.create({
+    await panelModel.create({
       data: {
         storyboardId,
         panelIndex,
@@ -358,6 +366,9 @@ export const PUT = apiHandler(async (
   if (isErrorResponse(authResult)) return authResult
 
   const body = await request.json()
+  const panelModel = prisma.novelPromotionPanel as unknown as {
+    create: (args: { data: Record<string, unknown> }) => Promise<unknown>
+  }
   const {
     storyboardId,
     panelIndex,
@@ -367,6 +378,7 @@ export const PUT = apiHandler(async (
     description,
     location,
     characters,
+    props,
     srtStart,
     srtEnd,
     duration,
@@ -397,6 +409,7 @@ export const PUT = apiHandler(async (
     description?: string | null
     location?: string | null
     characters?: string | null
+    props?: string | null
     srtStart?: number | null
     srtEnd?: number | null
     duration?: number | null
@@ -411,6 +424,7 @@ export const PUT = apiHandler(async (
   if (description !== undefined) updateData.description = description
   if (location !== undefined) updateData.location = location
   if (characters !== undefined) updateData.characters = characters
+  if (props !== undefined) updateData.props = props
   if (srtStart !== undefined) updateData.srtStart = parseNullableNumberField(srtStart)
   if (srtEnd !== undefined) updateData.srtEnd = parseNullableNumberField(srtEnd)
   if (duration !== undefined) updateData.duration = parseNullableNumberField(duration)
@@ -442,7 +456,7 @@ export const PUT = apiHandler(async (
     })
   } else {
     // 创建新的 Panel 记录
-    await prisma.novelPromotionPanel.create({
+    await panelModel.create({
       data: {
         storyboardId,
         panelIndex,
@@ -452,6 +466,7 @@ export const PUT = apiHandler(async (
         description: description ?? null,
         location: location ?? null,
         characters: characters ?? null,
+        props: props ?? null,
         srtStart: srtStart ?? null,
         srtEnd: srtEnd ?? null,
         duration: duration ?? null,

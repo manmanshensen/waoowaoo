@@ -61,6 +61,13 @@
         "description": "场景描述",
         "descPlaceholder": "请输入场景描述..."
     },
+    "prop": {
+        "title": "新建道具",
+        "name": "道具名称",
+        "namePlaceholder": "请输入道具名称",
+        "summary": "道具描述",
+        "summaryPlaceholder": "请输入道具描述..."
+    },
     "artStyle": {
         "title": "画面风格"
     },
@@ -83,6 +90,8 @@
         "addOnlyLocation": "仅添加场景",
         "addOnlyToAssetHubLocation": "仅添加场景到资产库",
         "addAndUploadReference": "添加并上传参考图",
+        "addOnlyProp": "仅添加道具",
+        "addOnlyToAssetHubProp": "仅添加道具到资产库",
         "addAndGeneratePrefix": "添加并生成",
         "generateCountSuffix": "张图片",
         "selectGenerateCount": "选择生成数量",

@@ -104,6 +104,7 @@ model NovelPromotionLocation {
   novelPromotionProjectId String
   name                    String
   summary                 String?               @db.Text // 场景简要描述（用途/人物关联）
+  assetKind               String                @default("location")
   createdAt               DateTime              @default(now())
   updatedAt               DateTime              @default(now()) @updatedAt
   sourceGlobalLocationId  String? // 🆕 来源全局场景ID（复制时记录）
@@ -170,6 +171,7 @@ model NovelPromotionClip {
   createdAt  DateTime                  @default(now())
   updatedAt  DateTime                  @default(now()) @updatedAt
   characters String?                   @db.Text
+  props      String?                   @db.Text
   endText    String?                   @db.Text
   shotCount  Int?
   startText  String?                   @db.Text
@@ -192,6 +194,7 @@ model NovelPromotionPanel {
   description       String?                   @db.Text
   location          String?                   @db.Text
   characters        String?                   @db.Text
+  props             String?                   @db.Text
   srtSegment        String?                   @db.Text
   srtStart          Float?
   srtEnd            Float?
@@ -658,6 +661,10 @@ model GraphRun {
   errorCode         String?
   errorMessage      String?            @db.Text
   cancelRequestedAt DateTime?
+  leaseOwner        String?
+  leaseExpiresAt    DateTime?
+  heartbeatAt       DateTime?
+  workflowVersion   Int                @default(1)
   queuedAt          DateTime           @default(now())
   startedAt         DateTime?
   finishedAt        DateTime?
@@ -675,6 +682,8 @@ model GraphRun {
   @@index([userId, createdAt])
   @@index([taskId])
   @@index([targetType, targetId])
+  @@index([workflowType, targetType, targetId, status])
+  @@index([leaseExpiresAt])
   @@map("graph_runs")
 }
 
@@ -872,6 +881,7 @@ model GlobalLocation {
   name      String
   artStyle  String?
   summary   String?  @db.Text
+  assetKind String   @default("location")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
