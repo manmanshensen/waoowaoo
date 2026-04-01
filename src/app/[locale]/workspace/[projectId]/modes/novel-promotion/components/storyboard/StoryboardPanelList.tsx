@@ -34,6 +34,7 @@ interface StoryboardPanelListProps {
   onUploadPanelImage: (panelId: string, file: File) => Promise<void>
   onOpenEditModal: (panelIndex: number) => void
   onOpenAIDataModal: (panelIndex: number) => void
+  onClearPanelVideoPrompt: (panelIndex: number) => Promise<void>
   onSelectPanelCandidateIndex: (panelId: string, index: number) => void
   onConfirmPanelCandidate: (panelId: string, imageUrl: string) => Promise<void>
   onCancelPanelCandidate: (panelId: string) => void
@@ -70,6 +71,7 @@ export default function StoryboardPanelList({
   onUploadPanelImage,
   onOpenEditModal,
   onOpenAIDataModal,
+  onClearPanelVideoPrompt,
   onSelectPanelCandidateIndex,
   onConfirmPanelCandidate,
   onCancelPanelCandidate,
@@ -136,6 +138,7 @@ export default function StoryboardPanelList({
               onUploadPanelImage={onUploadPanelImage}
               onOpenEditModal={() => onOpenEditModal(index)}
               onOpenAIDataModal={() => onOpenAIDataModal(index)}
+              onClearVideoPrompt={() => { void onClearPanelVideoPrompt(index) }}
               onSelectCandidateIndex={onSelectPanelCandidateIndex}
               onConfirmCandidate={onConfirmPanelCandidate}
               onCancelCandidate={onCancelPanelCandidate}

@@ -46,6 +46,8 @@ export interface StoryboardGroupProps {
   onUploadPanelImage: (panelId: string, file: File) => Promise<void>
   onOpenEditModal: (panelIndex: number) => void
   onOpenAIDataModal: (panelIndex: number) => void
+  onClearPanelVideoPrompt: (panelIndex: number) => Promise<void>
+  onClearStoryboardVideoPrompts: () => Promise<void>
   getPanelCandidates: (panel: NovelPromotionPanel) => { candidates: string[]; selectedIndex: number } | null
   onSelectPanelCandidateIndex: (panelId: string, index: number) => void
   onConfirmPanelCandidate: (panelId: string, imageUrl: string) => Promise<void>

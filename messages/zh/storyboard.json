@@ -368,6 +368,9 @@
         "generateVariant": "基于此镜头生成变体",
         "needImage": "需要先生成图片",
         "deleteShot": "删除镜头",
+        "clearPanelVideoPrompt": "清空本镜头视频提示词",
+        "clearSegmentVideoPrompts": "清空本片段全部视频提示词",
+        "confirmClearSegmentVideoPrompts": "确认清空本片段下所有镜头的视频提示词吗？此操作会立即保存。",
         "pasteSrtPlaceholder": "粘贴新的SRT内容..."
     },
     "firstLastFrame": {

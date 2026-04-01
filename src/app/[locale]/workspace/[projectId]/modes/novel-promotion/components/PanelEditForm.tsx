@@ -38,6 +38,7 @@ interface PanelEditFormProps {
   saveErrorMessage?: string | null
   onRetrySave?: () => void
   onUpdate: (updates: Partial<PanelEditData>) => void
+  onClearVideoPrompt?: () => void
   onOpenCharacterPicker: () => void
   onOpenLocationPicker: () => void
   onRemoveCharacter: (index: number) => void
@@ -51,6 +52,7 @@ export default function PanelEditForm({
   saveErrorMessage = null,
   onRetrySave,
   onUpdate,
+  onClearVideoPrompt,
   onOpenCharacterPicker,
   onOpenLocationPicker,
   onRemoveCharacter,
@@ -64,6 +66,7 @@ export default function PanelEditForm({
       saveErrorMessage={saveErrorMessage}
       onRetrySave={onRetrySave}
       onUpdate={onUpdate}
+      onClearVideoPrompt={onClearVideoPrompt}
       onOpenCharacterPicker={onOpenCharacterPicker}
       onOpenLocationPicker={onOpenLocationPicker}
       onRemoveCharacter={onRemoveCharacter}

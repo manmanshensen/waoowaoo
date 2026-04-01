@@ -368,6 +368,9 @@
         "generateVariant": "Generate variant based on this panel",
         "needImage": "Need to generate image first",
         "deleteShot": "Delete Shot",
+        "clearPanelVideoPrompt": "Clear this panel's video prompt",
+        "clearSegmentVideoPrompts": "Clear all video prompts in this segment",
+        "confirmClearSegmentVideoPrompts": "Clear video prompts for every panel in this segment? This will save immediately.",
         "pasteSrtPlaceholder": "Paste new SRT content..."
     },
     "firstLastFrame": {

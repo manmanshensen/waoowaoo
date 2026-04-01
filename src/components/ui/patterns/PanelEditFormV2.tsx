@@ -18,6 +18,7 @@ export interface PanelEditFormV2Props {
   saveErrorMessage?: string | null
   onRetrySave?: () => void
   onUpdate: (updates: Partial<PanelEditData>) => void
+  onClearVideoPrompt?: () => void
   onOpenCharacterPicker: () => void
   onOpenLocationPicker: () => void
   onRemoveCharacter: (index: number) => void
@@ -32,6 +33,7 @@ export default function PanelEditFormV2({
   saveErrorMessage = null,
   onRetrySave,
   onUpdate,
+  onClearVideoPrompt,
   onOpenCharacterPicker,
   onOpenLocationPicker,
   onRemoveCharacter,
@@ -102,7 +104,24 @@ export default function PanelEditFormV2({
         />
       </GlassField>
 
-      <GlassField label={t('panel.videoPrompt')} hint={t('panel.videoPromptHint')}>
+      <GlassField
+        label={t('panel.videoPrompt')}
+        hint={t('panel.videoPromptHint')}
+        actions={
+          onClearVideoPrompt ? (
+            <button
+              type="button"
+              onClick={onClearVideoPrompt}
+              className="inline-flex h-8 items-center justify-center gap-1 rounded-md px-2 text-[var(--glass-text-secondary)] hover:text-[var(--glass-tone-danger-fg)] transition-colors"
+              aria-label={t('panelActions.clearPanelVideoPrompt')}
+              title={t('panelActions.clearPanelVideoPrompt')}
+            >
+              <AppIcon name="trash" className="h-3.5 w-3.5" />
+              <span className="text-xs">{t('panelActions.clearPanelVideoPrompt')}</span>
+            </button>
+          ) : null
+        }
+      >
         <GlassTextarea
           density="compact"
           rows={2}

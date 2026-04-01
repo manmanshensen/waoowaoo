@@ -1,5 +1,6 @@
 'use client'
 
+import { useCallback } from 'react'
 import { NovelPromotionStoryboard, NovelPromotionClip } from '@/types/project'
 import { CharacterPickerModal, LocationPickerModal } from '../PanelEditForm'
 import ImageEditModal from './ImageEditModal'
@@ -146,6 +147,47 @@ export default function StoryboardStage({
     updatePanelActingNotesMutation,
   })
 
+  const handleClearPanelVideoPrompt = useCallback(async (storyboardId: string, panelIndex: number) => {
+    const storyboard = localStoryboards.find((item) => item.id === storyboardId)
+    if (!storyboard) return
+    const panel = getTextPanels(storyboard)[panelIndex]
+    if (!panel) return
+
+    const currentData = getPanelEditData(panel)
+    if (!currentData.videoPrompt) return
+
+    const updatedPanelData = {
+      ...currentData,
+      videoPrompt: '',
+    }
+
+    updatePanelEdit(panel.id, panel, { videoPrompt: '' })
+    await savePanelWithData(storyboardId, updatedPanelData)
+  }, [getPanelEditData, getTextPanels, localStoryboards, savePanelWithData, updatePanelEdit])
+
+  const handleClearStoryboardVideoPrompts = useCallback(async (storyboardId: string) => {
+    const storyboard = localStoryboards.find((item) => item.id === storyboardId)
+    if (!storyboard) return
+
+    const panels = getTextPanels(storyboard)
+    const panelsToClear = panels.filter((panel) => {
+      const currentData = getPanelEditData(panel)
+      return !!currentData.videoPrompt
+    })
+
+    if (panelsToClear.length === 0) return
+
+    await Promise.all(panelsToClear.map(async (panel) => {
+      const currentData = getPanelEditData(panel)
+      const updatedPanelData = {
+        ...currentData,
+        videoPrompt: '',
+      }
+      updatePanelEdit(panel.id, panel, { videoPrompt: '' })
+      await savePanelWithData(storyboardId, updatedPanelData)
+    }))
+  }, [getPanelEditData, getTextPanels, localStoryboards, savePanelWithData, updatePanelEdit])
+
   return (
       <StoryboardStageShell
         isTransitioning={isTransitioning}
@@ -213,6 +255,8 @@ export default function StoryboardStage({
           onUploadPanelImage={uploadPanelImage}
           onOpenEditModal={(storyboardId, panelIndex) => setEditingPanel({ storyboardId, panelIndex })}
           onOpenAIDataModal={(storyboardId, panelIndex) => setAIDataPanel({ storyboardId, panelIndex })}
+          onClearPanelVideoPrompt={handleClearPanelVideoPrompt}
+          onClearStoryboardVideoPrompts={handleClearStoryboardVideoPrompts}
           getPanelCandidates={getPanelCandidates}
           onSelectPanelCandidateIndex={selectPanelCandidateIndex}
           onConfirmPanelCandidate={selectPanelCandidate}

@@ -40,6 +40,7 @@ interface PanelCardProps {
   onUploadPanelImage: (panelId: string, file: File) => Promise<void>
   onOpenEditModal: () => void
   onOpenAIDataModal: () => void
+  onClearVideoPrompt: () => void
   onSelectCandidateIndex: (panelId: string, index: number) => void
   onConfirmCandidate: (panelId: string, imageUrl: string) => Promise<void>
   onCancelCandidate: (panelId: string) => void
@@ -78,6 +79,7 @@ export default function PanelCard({
   onUploadPanelImage,
   onOpenEditModal,
   onOpenAIDataModal,
+  onClearVideoPrompt,
   onSelectCandidateIndex,
   onConfirmCandidate,
   onCancelCandidate,
@@ -154,6 +156,7 @@ export default function PanelCard({
           saveErrorMessage={saveErrorMessage}
           onRetrySave={onRetrySave}
           onUpdate={onUpdate}
+          onClearVideoPrompt={onClearVideoPrompt}
           onOpenCharacterPicker={onOpenCharacterPicker}
           onOpenLocationPicker={onOpenLocationPicker}
           onRemoveCharacter={onRemoveCharacter}

@@ -57,6 +57,8 @@ export default function StoryboardGroup({
   onUploadPanelImage,
   onOpenEditModal,
   onOpenAIDataModal,
+  onClearPanelVideoPrompt,
+  onClearStoryboardVideoPrompts,
   getPanelCandidates,
   onSelectPanelCandidateIndex,
   onConfirmPanelCandidate,
@@ -169,6 +171,7 @@ export default function StoryboardGroup({
           formatClipTitle={formatClipTitle}
           onMoveUp={onMoveUp}
           onMoveDown={onMoveDown}
+          onClearStoryboardVideoPrompts={() => { void onClearStoryboardVideoPrompts() }}
         />
         <StoryboardGroupActions
           hasAnyImage={hasAnyImage}
@@ -232,6 +235,7 @@ export default function StoryboardGroup({
         onUploadPanelImage={onUploadPanelImage}
         onOpenEditModal={onOpenEditModal}
         onOpenAIDataModal={onOpenAIDataModal}
+        onClearPanelVideoPrompt={onClearPanelVideoPrompt}
         onSelectPanelCandidateIndex={onSelectPanelCandidateIndex}
         onConfirmPanelCandidate={onConfirmPanelCandidate}
         onCancelPanelCandidate={onCancelPanelCandidate}

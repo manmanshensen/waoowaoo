@@ -58,6 +58,8 @@ interface StoryboardCanvasProps {
   onUploadPanelImage: (panelId: string, file: File) => Promise<void>
   onOpenEditModal: (storyboardId: string, panelIndex: number) => void
   onOpenAIDataModal: (storyboardId: string, panelIndex: number) => void
+  onClearPanelVideoPrompt: (storyboardId: string, panelIndex: number) => Promise<void>
+  onClearStoryboardVideoPrompts: (storyboardId: string) => Promise<void>
   getPanelCandidates: (panel: NovelPromotionPanel) => { candidates: string[]; selectedIndex: number } | null
   onSelectPanelCandidateIndex: (panelId: string, index: number) => void
   onConfirmPanelCandidate: (panelId: string, imageUrl: string) => Promise<void>
@@ -120,6 +122,8 @@ export default function StoryboardCanvas({
   onUploadPanelImage,
   onOpenEditModal,
   onOpenAIDataModal,
+  onClearPanelVideoPrompt,
+  onClearStoryboardVideoPrompts,
   getPanelCandidates,
   onSelectPanelCandidateIndex,
   onConfirmPanelCandidate,
@@ -195,6 +199,8 @@ export default function StoryboardCanvas({
               onUploadPanelImage={onUploadPanelImage}
               onOpenEditModal={(panelIndex) => onOpenEditModal(storyboard.id, panelIndex)}
               onOpenAIDataModal={(panelIndex) => onOpenAIDataModal(storyboard.id, panelIndex)}
+              onClearPanelVideoPrompt={(panelIndex) => onClearPanelVideoPrompt(storyboard.id, panelIndex)}
+              onClearStoryboardVideoPrompts={() => onClearStoryboardVideoPrompts(storyboard.id)}
               getPanelCandidates={getPanelCandidates}
               onSelectPanelCandidateIndex={onSelectPanelCandidateIndex}
               onConfirmPanelCandidate={onConfirmPanelCandidate}
