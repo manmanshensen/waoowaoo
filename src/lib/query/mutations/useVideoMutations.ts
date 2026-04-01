@@ -1,5 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { queryKeys } from '../keys'
+import { apiFetch } from '@/lib/api-fetch'
+import { resolveTaskErrorMessage } from '@/lib/task/error-message'
 import { invalidateQueryTemplates, requestJsonWithError } from './mutation-shared'
 
 /**
@@ -78,6 +80,47 @@ export function useUpdateProjectPanelVideoPrompt(projectId: string) {
         },
         'update failed',
       ),
+    onSettled: () => {
+      invalidateQueryTemplates(queryClient, [queryKeys.projectData(projectId)])
+    },
+  })
+}
+
+export function useUploadProjectPanelVideo(projectId: string) {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (payload: { panelId: string; file: File }) => {
+      const formData = new FormData()
+      formData.append('panelId', payload.panelId)
+      formData.append('file', payload.file)
+
+      const response = await apiFetch(`/api/novel-promotion/${projectId}/upload-panel-video`, {
+        method: 'POST',
+        body: formData,
+      })
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({}))
+        throw new Error(resolveTaskErrorMessage(error, '上传视频失败'))
+      }
+
+      return response.json() as Promise<{
+        success: boolean
+        panelId: string
+        videoUrl: string
+        media?: {
+          id: string
+          publicId: string
+          url: string
+          mimeType: string | null
+          sizeBytes: number | null
+          width: number | null
+          height: number | null
+          durationMs: number | null
+        } | null
+      }>
+    },
     onSettled: () => {
       invalidateQueryTemplates(queryClient, [queryKeys.projectData(projectId)])
     },

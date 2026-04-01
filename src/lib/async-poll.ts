@@ -47,7 +47,7 @@ function getErrorMessage(error: unknown): string {
  * 解析 externalId 获取 provider、type 和请求信息
  */
 export function parseExternalId(externalId: string): {
-    provider: 'FAL' | 'ARK' | 'GEMINI' | 'GOOGLE' | 'MINIMAX' | 'VIDU' | 'OPENAI' | 'OCOMPAT' | 'BAILIAN' | 'SILICONFLOW' | 'UNKNOWN'
+    provider: 'FAL' | 'ARK' | 'GEMINI' | 'GOOGLE' | 'MINIMAX' | 'VIDU' | 'OPENAI' | 'OCOMPAT' | 'BAILIAN' | 'SILICONFLOW' | 'GRSAI' | 'UNKNOWN'
     type: 'VIDEO' | 'IMAGE' | 'BATCH' | 'UNKNOWN'
     endpoint?: string
     requestId: string
@@ -209,9 +209,23 @@ export function parseExternalId(externalId: string): {
         }
     }
 
+    if (externalId.startsWith('GRSAI:')) {
+        const parts = externalId.split(':')
+        const type = parts[1]
+        const requestId = parts.slice(2).join(':')
+        if ((type !== 'VIDEO' && type !== 'IMAGE') || !requestId) {
+            throw new Error(`无效 GRSAI externalId: "${externalId}"，应为 GRSAI:TYPE:requestId`)
+        }
+        return {
+            provider: 'GRSAI',
+            type: type as 'VIDEO' | 'IMAGE',
+            requestId,
+        }
+    }
+
     throw new Error(
         `无法识别的 externalId 格式: "${externalId}". ` +
-        `支持的格式: FAL:TYPE:endpoint:requestId, ARK:TYPE:requestId, GEMINI:BATCH:batchName, GOOGLE:VIDEO:operationName, MINIMAX:TYPE:taskId, VIDU:TYPE:taskId, OPENAI:VIDEO:providerToken:videoId, OCOMPAT:TYPE:providerToken:modelKeyToken:taskId, BAILIAN:TYPE:requestId, SILICONFLOW:TYPE:requestId`
+        `支持的格式: FAL:TYPE:endpoint:requestId, ARK:TYPE:requestId, GEMINI:BATCH:batchName, GOOGLE:VIDEO:operationName, MINIMAX:TYPE:taskId, VIDU:TYPE:taskId, OPENAI:VIDEO:providerToken:videoId, OCOMPAT:TYPE:providerToken:modelKeyToken:taskId, BAILIAN:TYPE:requestId, SILICONFLOW:TYPE:requestId, GRSAI:TYPE:requestId`
     )
 }
 
@@ -251,6 +265,8 @@ export async function pollAsyncTask(
             return await pollBailianTask(parsed.requestId, userId)
         case 'SILICONFLOW':
             return await pollSiliconFlowTask(parsed.requestId)
+        case 'GRSAI':
+            return await pollGrsaiTask(parsed.requestId, userId)
         default:
             // 🔥 移除 fallback：未知 provider 直接抛出错误
             throw new Error(`未知的 Provider: ${parsed.provider}`)
@@ -857,6 +873,108 @@ async function pollSiliconFlowTask(requestId: string): Promise<PollResult> {
     }
 }
 
+interface GrsaiResultItem {
+    url?: string
+}
+
+interface GrsaiTaskQueryResponse {
+    code?: number
+    msg?: string
+    data?: {
+        id?: string
+        results?: GrsaiResultItem[]
+        progress?: number
+        status?: string
+        failure_reason?: string
+        error?: string
+    }
+}
+
+async function pollGrsaiTask(requestId: string, userId: string): Promise<PollResult> {
+    const logPrefix = '[GRSAI Query]'
+
+    try {
+        const { apiKey } = await getProviderConfig(userId, 'grsai')
+        const response = await fetch('https://grsai.dakka.com.cn/v1/draw/result', {
+            method: 'POST',
+            headers: {
+                Authorization: `Bearer ${apiKey}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ id: requestId }),
+        })
+
+        const raw = await response.text()
+        let data: GrsaiTaskQueryResponse = {}
+        if (raw) {
+            try {
+                const parsed = JSON.parse(raw) as unknown
+                if (parsed && typeof parsed === 'object') {
+                    data = parsed as GrsaiTaskQueryResponse
+                } else {
+                    throw new Error('GRSAI_TASK_QUERY_RESPONSE_INVALID')
+                }
+            } catch {
+                throw new Error('GRSAI_TASK_QUERY_RESPONSE_INVALID_JSON')
+            }
+        }
+
+        if (!response.ok) {
+            return {
+                status: 'failed',
+                error: `GRSAI: 查询失败 ${response.status} ${typeof data.msg === 'string' ? data.msg : ''}`.trim(),
+            }
+        }
+
+        const code = typeof data.code === 'number' ? data.code : null
+        const status = typeof data.data?.status === 'string' ? data.data.status.trim().toLowerCase() : ''
+        const failureReason = typeof data.data?.failure_reason === 'string' ? data.data.failure_reason.trim() : ''
+        const detail = typeof data.data?.error === 'string' ? data.data.error.trim() : ''
+        const msg = typeof data.msg === 'string' ? data.msg.trim() : ''
+
+        if (code !== null && code !== 0) {
+            return {
+                status: 'failed',
+                error: `GRSAI: ${detail || msg || `code=${code}`}`,
+            }
+        }
+
+        if (status === 'failed') {
+            return {
+                status: 'failed',
+                error: `GRSAI: ${failureReason || detail || msg || '任务失败'}`,
+            }
+        }
+
+        if (status === 'succeeded') {
+            const results = Array.isArray(data.data?.results) ? data.data.results : []
+            const imageUrl = typeof results[0]?.url === 'string' ? results[0].url.trim() : ''
+            if (!imageUrl) {
+                return {
+                    status: 'failed',
+                    error: 'GRSAI: 任务完成但未返回结果URL',
+                }
+            }
+            return {
+                status: 'completed',
+                resultUrl: imageUrl,
+                imageUrl,
+            }
+        }
+
+        return {
+            status: 'pending',
+        }
+    } catch (error: unknown) {
+        const errorMessage = getErrorMessage(error)
+        _ulogError(`${logPrefix} task_id=${requestId} 异常:`, error)
+        return {
+            status: 'failed',
+            error: `GRSAI: ${errorMessage}`,
+        }
+    }
+}
+
 /**
  * 查询 Vidu 任务状态
  */
@@ -948,7 +1066,7 @@ async function queryViduTaskStatus(
  * 创建标准格式的 externalId
  */
 export function formatExternalId(
-    provider: 'FAL' | 'ARK' | 'GEMINI' | 'GOOGLE' | 'MINIMAX' | 'VIDU' | 'OPENAI' | 'OCOMPAT' | 'BAILIAN' | 'SILICONFLOW',
+    provider: 'FAL' | 'ARK' | 'GEMINI' | 'GOOGLE' | 'MINIMAX' | 'VIDU' | 'OPENAI' | 'OCOMPAT' | 'BAILIAN' | 'SILICONFLOW' | 'GRSAI',
     type: 'VIDEO' | 'IMAGE' | 'BATCH',
     requestId: string,
     endpoint?: string,

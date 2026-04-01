@@ -11,6 +11,7 @@ import { isArtStyleValue, type ArtStyleValue } from '@/lib/constants'
 import { normalizeImageGenerationCount } from '@/lib/image-generation/count'
 import { ensureProjectLocationImageSlots } from '@/lib/image-generation/location-slots'
 import { prisma } from '@/lib/prisma'
+import { clearSupersededTasksByDedupeKey } from '@/lib/task/service'
 import {
   hasCharacterAppearanceOutput,
   hasLocationImageOutput
@@ -122,6 +123,12 @@ export const POST = apiHandler(async (
     const message = err instanceof Error ? err.message : 'Image model capability not configured'
     throw new ApiError('INVALID_PARAMS', { code: 'IMAGE_MODEL_CAPABILITY_NOT_CONFIGURED', message })
   }
+  const dedupeKey = `${taskType}:${targetId}:${imageIndex === null ? count : `single:${imageIndex}`}`
+  await clearSupersededTasksByDedupeKey({
+    dedupeKey,
+    userId: session.user.id,
+    reason: 'Superseded by manual regenerate request',
+  })
   const result = await submitTask({
     userId: session.user.id,
     locale,
@@ -131,7 +138,8 @@ export const POST = apiHandler(async (
     targetType,
     targetId,
     payload: withTaskUiPayload(billingPayload, { hasOutputAtStart }),
-    dedupeKey: `${taskType}:${targetId}:${imageIndex === null ? count : `single:${imageIndex}`}`,
+    dedupeKey,
+    maxAttempts: 1,
     billingInfo: buildDefaultTaskBillingInfo(taskType, billingPayload)
   })
 

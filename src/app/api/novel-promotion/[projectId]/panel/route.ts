@@ -40,6 +40,7 @@ export const POST = apiHandler(async (
   const body = await request.json()
   const {
     storyboardId,
+    insertAfterPanelId,
     shotType,
     cameraMove,
     description,
@@ -56,53 +57,93 @@ export const POST = apiHandler(async (
     throw new ApiError('INVALID_PARAMS')
   }
 
-  // 验证 storyboard 存在，并获取现有 panels 以计算正确的 panelIndex
-  const storyboard = await prisma.novelPromotionStoryboard.findUnique({
-    where: { id: storyboardId },
-    include: {
-      panels: {
-        orderBy: { panelIndex: 'desc' },
-        take: 1
+  const newPanel = await prisma.$transaction(async (tx) => {
+    const storyboard = await tx.novelPromotionStoryboard.findUnique({
+      where: { id: storyboardId },
+      include: {
+        panels: {
+          orderBy: { panelIndex: 'desc' },
+          take: 1,
+        },
+      },
+    })
+
+    if (!storyboard) {
+      throw new ApiError('NOT_FOUND')
+    }
+
+    let newPanelIndex: number
+
+    if (insertAfterPanelId) {
+      const insertAfterPanel = await tx.novelPromotionPanel.findUnique({
+        where: { id: insertAfterPanelId },
+        select: { id: true, storyboardId: true, panelIndex: true },
+      })
+
+      if (!insertAfterPanel || insertAfterPanel.storyboardId !== storyboardId) {
+        throw new ApiError('INVALID_PARAMS')
       }
+
+      newPanelIndex = insertAfterPanel.panelIndex + 1
+
+      const affectedPanels = await tx.novelPromotionPanel.findMany({
+        where: {
+          storyboardId,
+          panelIndex: { gte: newPanelIndex },
+        },
+        select: { id: true, panelIndex: true },
+        orderBy: { panelIndex: 'asc' },
+      })
+
+      for (const panel of affectedPanels) {
+        await tx.novelPromotionPanel.update({
+          where: { id: panel.id },
+          data: { panelIndex: -(panel.panelIndex + 1) },
+        })
+      }
+
+      for (const panel of affectedPanels) {
+        await tx.novelPromotionPanel.update({
+          where: { id: panel.id },
+          data: {
+            panelIndex: panel.panelIndex + 1,
+            panelNumber: panel.panelIndex + 2,
+          },
+        })
+      }
+    } else {
+      const maxPanelIndex = storyboard.panels.length > 0 ? storyboard.panels[0].panelIndex : -1
+      newPanelIndex = maxPanelIndex + 1
     }
-  })
 
-  if (!storyboard) {
-    throw new ApiError('NOT_FOUND')
-  }
+    const createdPanel = await tx.novelPromotionPanel.create({
+      data: {
+        storyboardId,
+        panelIndex: newPanelIndex,
+        panelNumber: newPanelIndex + 1,
+        shotType: shotType ?? null,
+        cameraMove: cameraMove ?? null,
+        description: description ?? null,
+        location: location ?? null,
+        characters: characters ?? null,
+        srtStart: srtStart ?? null,
+        srtEnd: srtEnd ?? null,
+        duration: duration ?? null,
+        videoPrompt: videoPrompt ?? null,
+        firstLastFramePrompt: firstLastFramePrompt ?? null,
+      }
+    })
 
-  // 自动计算正确的 panelIndex（取最大值 + 1，避免唯一约束冲突）
-  const maxPanelIndex = storyboard.panels.length > 0 ? storyboard.panels[0].panelIndex : -1
-  const newPanelIndex = maxPanelIndex + 1
-  const newPanelNumber = newPanelIndex + 1
+    const panelCount = await tx.novelPromotionPanel.count({
+      where: { storyboardId }
+    })
 
-  // 创建新的 Panel 记录
-  const newPanel = await prisma.novelPromotionPanel.create({
-    data: {
-      storyboardId,
-      panelIndex: newPanelIndex,
-      panelNumber: newPanelNumber,
-      shotType: shotType ?? null,
-      cameraMove: cameraMove ?? null,
-      description: description ?? null,
-      location: location ?? null,
-      characters: characters ?? null,
-      srtStart: srtStart ?? null,
-      srtEnd: srtEnd ?? null,
-      duration: duration ?? null,
-      videoPrompt: videoPrompt ?? null,
-      firstLastFramePrompt: firstLastFramePrompt ?? null,
-    }
-  })
+    await tx.novelPromotionStoryboard.update({
+      where: { id: storyboardId },
+      data: { panelCount }
+    })
 
-  // 更新 panelCount
-  const panelCount = await prisma.novelPromotionPanel.count({
-    where: { storyboardId }
-  })
-
-  await prisma.novelPromotionStoryboard.update({
-    where: { id: storyboardId },
-    data: { panelCount }
+    return createdPanel
   })
 
   return NextResponse.json({ success: true, panel: newPanel })

@@ -59,6 +59,12 @@ function getProviderKey(providerId: string): string {
   return index === -1 ? providerId : providerId.slice(0, index)
 }
 
+const OPENAI_COMPAT_PROVIDER_KEYS = new Set([
+  'openai-compatible',
+  'flow2api',
+  'web-gemini',
+])
+
 export function migrateProviderEntry(rawProvider: unknown): ProviderMigrationResult {
   const summary = zeroProviderSummary()
   if (!isRecord(rawProvider)) {
@@ -78,7 +84,7 @@ export function migrateProviderEntry(rawProvider: unknown): ProviderMigrationRes
   const routeRaw = readTrimmedString(rawProvider.gatewayRoute)
   const apiModeRaw = readTrimmedString(rawProvider.apiMode)
 
-  if (providerKey === 'openai-compatible') {
+  if (OPENAI_COMPAT_PROVIDER_KEYS.has(providerKey)) {
     if (routeRaw !== 'openai-compat') {
       nextProvider.gatewayRoute = 'openai-compat'
       changed = true

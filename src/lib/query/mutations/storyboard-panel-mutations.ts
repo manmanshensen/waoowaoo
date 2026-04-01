@@ -90,6 +90,46 @@ export function useModifyProjectStoryboardImage(projectId: string) {
     })
 }
 
+export function useUploadProjectPanelImage(projectId: string) {
+    const queryClient = useQueryClient()
+    return useMutation({
+        mutationFn: async (payload: { panelId: string; file: File }) => {
+            const formData = new FormData()
+            formData.append('panelId', payload.panelId)
+            formData.append('file', payload.file)
+
+            const response = await apiFetch(`/api/novel-promotion/${projectId}/upload-panel-image`, {
+                method: 'POST',
+                body: formData,
+            })
+
+            if (!response.ok) {
+                const error = await response.json().catch(() => ({}))
+                throw new Error(resolveTaskErrorMessage(error, '上传分镜失败'))
+            }
+
+            return response.json() as Promise<{
+                success: boolean
+                panelId: string
+                imageUrl: string
+                media?: {
+                    id: string
+                    publicId: string
+                    url: string
+                    mimeType: string | null
+                    sizeBytes: number | null
+                    width: number | null
+                    height: number | null
+                    durationMs: number | null
+                } | null
+            }>
+        },
+        onSettled: () => {
+            invalidateQueryTemplates(queryClient, [queryKeys.projectAssets.all(projectId)])
+        },
+    })
+}
+
 /**
  * 下载剧集全部图片（zip）
  */

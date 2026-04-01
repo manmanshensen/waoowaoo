@@ -8,6 +8,7 @@ import {
   type VideoGenerateParams,
 } from './base'
 import { generateBailianAudio, generateBailianImage, generateBailianVideo } from '@/lib/providers/bailian'
+import { generateGrsaiImage } from '@/lib/providers/grsai'
 import { generateSiliconFlowAudio, generateSiliconFlowImage, generateSiliconFlowVideo } from '@/lib/providers/siliconflow'
 
 export class BailianImageGenerator extends BaseImageGenerator {
@@ -35,6 +36,25 @@ export class SiliconFlowImageGenerator extends BaseImageGenerator {
     const modelKey = typeof params.options?.modelKey === 'string' ? params.options.modelKey : ''
     const provider = typeof params.options?.provider === 'string' ? params.options.provider : 'siliconflow'
     return await generateSiliconFlowImage({
+      userId: params.userId,
+      prompt: params.prompt,
+      referenceImages: params.referenceImages,
+      options: {
+        ...params.options,
+        provider,
+        modelId,
+        modelKey,
+      },
+    })
+  }
+}
+
+export class GrsaiImageGenerator extends BaseImageGenerator {
+  protected async doGenerate(params: ImageGenerateParams): Promise<GenerateResult> {
+    const modelId = typeof params.options?.modelId === 'string' ? params.options.modelId : ''
+    const modelKey = typeof params.options?.modelKey === 'string' ? params.options.modelKey : ''
+    const provider = typeof params.options?.provider === 'string' ? params.options.provider : 'grsai'
+    return await generateGrsaiImage({
       userId: params.userId,
       prompt: params.prompt,
       referenceImages: params.referenceImages,

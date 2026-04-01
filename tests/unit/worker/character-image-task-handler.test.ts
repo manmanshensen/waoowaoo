@@ -158,7 +158,7 @@ describe('worker character-image-task-handler behavior', () => {
       imageCount: 5,
       imageUrl: 'cos/character-generated-0.png',
     })
-    expect(prismaMock.characterAppearance.update).toHaveBeenCalledWith({
+    expect(prismaMock.characterAppearance.update).toHaveBeenLastCalledWith({
       where: { id: 'appearance-2' },
       data: {
         imageUrls: JSON.stringify([
@@ -167,6 +167,37 @@ describe('worker character-image-task-handler behavior', () => {
           'cos/character-generated-2.png',
           'cos/character-generated-3.png',
           'cos/character-generated-4.png',
+        ]),
+        imageUrl: 'cos/character-generated-0.png',
+      },
+    })
+    expect(prismaMock.characterAppearance.update).toHaveBeenCalledTimes(5)
+  })
+
+  it('persists successful images incrementally before a later image fails', async () => {
+    sharedMock.generateLabeledImageToCos
+      .mockResolvedValueOnce('cos/character-generated-0.png')
+      .mockResolvedValueOnce('cos/character-generated-1.png')
+      .mockRejectedValueOnce(new Error('Gemini image generation failed: timeout'))
+
+    await expect(handleCharacterImageTask(buildJob({ count: 3 }))).rejects.toThrow(
+      'Gemini image generation failed: timeout',
+    )
+
+    expect(prismaMock.characterAppearance.update).toHaveBeenCalledTimes(2)
+    expect(prismaMock.characterAppearance.update).toHaveBeenNthCalledWith(1, {
+      where: { id: 'appearance-2' },
+      data: {
+        imageUrls: JSON.stringify(['cos/character-generated-0.png']),
+        imageUrl: 'cos/character-generated-0.png',
+      },
+    })
+    expect(prismaMock.characterAppearance.update).toHaveBeenNthCalledWith(2, {
+      where: { id: 'appearance-2' },
+      data: {
+        imageUrls: JSON.stringify([
+          'cos/character-generated-0.png',
+          'cos/character-generated-1.png',
         ]),
         imageUrl: 'cos/character-generated-0.png',
       },

@@ -64,7 +64,9 @@ const MODEL_TYPES: readonly ProviderCardModelType[] = ['llm', 'image', 'video', 
 
 export function getAddableModelTypesForProvider(providerId: string): ProviderCardModelType[] {
   const providerKey = getProviderKey(providerId)
+  if (providerKey === 'flow2api') return ['image', 'video']
   if (providerKey === 'openai-compatible') return ['llm', 'image', 'video']
+  if (providerKey === 'web-gemini') return ['llm', 'image']
   return ['llm', 'image', 'video', 'audio']
 }
 
@@ -77,7 +79,7 @@ export function shouldShowOpenAICompatVideoHint(
 
 function shouldShowDefaultTabs(providerId: string): boolean {
   const providerKey = getProviderKey(providerId)
-  return providerKey === 'openai-compatible' || providerKey === 'gemini-compatible'
+  return providerKey === 'openai-compatible' || providerKey === 'gemini-compatible' || providerKey === 'flow2api' || providerKey === 'web-gemini'
 }
 
 export function getVisibleModelTypesForProvider(

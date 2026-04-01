@@ -22,6 +22,10 @@ const submitTaskMock = vi.hoisted(() => vi.fn<(input: unknown) => Promise<{
   deduped: false,
 })))
 
+const taskServiceMock = vi.hoisted(() => ({
+  clearSupersededTasksByDedupeKey: vi.fn(async () => ({ clearedTaskIds: [] })),
+}))
+
 const configServiceMock = vi.hoisted(() => ({
   getProjectModelConfig: vi.fn(async () => ({
     analysisModel: null,
@@ -51,6 +55,7 @@ const billingMock = vi.hoisted(() => ({
 
 vi.mock('@/lib/api-auth', () => authMock)
 vi.mock('@/lib/task/submitter', () => ({ submitTask: submitTaskMock }))
+vi.mock('@/lib/task/service', () => taskServiceMock)
 vi.mock('@/lib/config-service', () => configServiceMock)
 vi.mock('@/lib/task/has-output', () => hasOutputMock)
 vi.mock('@/lib/billing', () => billingMock)
@@ -125,5 +130,45 @@ describe('api specific - novel promotion generate image art style', () => {
     } | undefined
     expect(submitArg?.payload?.count).toBe(6)
     expect(submitArg?.dedupeKey).toBe('image_character:appearance-1:6')
+  })
+
+  it('clears superseded tasks before submitting a replacement image task', async () => {
+    const mod = await import('@/app/api/novel-promotion/[projectId]/generate-image/route')
+    const req = buildMockRequest({
+      path: '/api/novel-promotion/project-1/generate-image',
+      method: 'POST',
+      body: {
+        type: 'character',
+        id: 'character-1',
+        appearanceId: 'appearance-1',
+      },
+    })
+
+    const res = await mod.POST(req, { params: Promise.resolve({ projectId: 'project-1' }) })
+    expect(res.status).toBe(200)
+    expect(taskServiceMock.clearSupersededTasksByDedupeKey).toHaveBeenCalledWith({
+      dedupeKey: 'image_character:appearance-1:1',
+      userId: 'user-1',
+      reason: 'Superseded by manual regenerate request',
+    })
+  })
+
+  it('submits manual image generation with a single queue attempt', async () => {
+    const mod = await import('@/app/api/novel-promotion/[projectId]/generate-image/route')
+    const req = buildMockRequest({
+      path: '/api/novel-promotion/project-1/generate-image',
+      method: 'POST',
+      body: {
+        type: 'character',
+        id: 'character-1',
+        appearanceId: 'appearance-1',
+      },
+    })
+
+    const res = await mod.POST(req, { params: Promise.resolve({ projectId: 'project-1' }) })
+    expect(res.status).toBe(200)
+
+    const submitArg = submitTaskMock.mock.calls.at(-1)?.[0] as { maxAttempts?: number } | undefined
+    expect(submitArg?.maxAttempts).toBe(1)
   })
 })

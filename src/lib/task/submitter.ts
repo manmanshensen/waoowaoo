@@ -277,6 +277,9 @@ export async function submitTask(params: {
         },
       }, {
         priority: typeof task.priority === 'number' ? task.priority : 0,
+        attempts: typeof task.maxAttempts === 'number' && Number.isFinite(task.maxAttempts)
+          ? Math.max(1, Math.floor(task.maxAttempts))
+          : 1,
       })
       await markTaskEnqueued(task.id)
       logger.info({

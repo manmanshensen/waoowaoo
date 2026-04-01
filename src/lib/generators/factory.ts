@@ -25,6 +25,7 @@ import {
     BailianAudioGenerator,
     BailianImageGenerator,
     BailianVideoGenerator,
+    GrsaiImageGenerator,
     SiliconFlowAudioGenerator,
     SiliconFlowImageGenerator,
     SiliconFlowVideoGenerator,
@@ -67,6 +68,8 @@ export function createImageGenerator(provider: string, modelId?: string): ImageG
             return new BailianImageGenerator()
         case 'siliconflow':
             return new SiliconFlowImageGenerator()
+        case 'grsai':
+            return new GrsaiImageGenerator()
         default:
             throw new Error(`Unknown image generator provider: ${provider}`)
     }

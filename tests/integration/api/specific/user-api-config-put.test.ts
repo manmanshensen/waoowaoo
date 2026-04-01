@@ -416,6 +416,74 @@ describe('api specific - user api-config PUT provider uniqueness', () => {
     expect(prismaMock.userPreference.upsert).toHaveBeenCalledTimes(1)
   })
 
+  it('accepts web-gemini provider llm/image models and forces openai-compat route', async () => {
+    installAuthMocks()
+    mockAuthenticated('user-1')
+    const route = await import('@/app/api/user/api-config/route')
+
+    const req = buildMockRequest({
+      path: '/api/user/api-config',
+      method: 'PUT',
+      body: {
+        providers: [
+          {
+            id: 'web-gemini',
+            name: 'Web Gemini',
+            baseUrl: 'http://127.0.0.1:4000/v1',
+            apiKey: 'compat-key',
+            gatewayRoute: 'openai-compat',
+          },
+        ],
+        models: [
+          {
+            provider: 'web-gemini',
+            modelId: 'gemini-web-proxy',
+            modelKey: 'web-gemini::gemini-web-proxy',
+            name: 'Web Gemini Chat',
+            type: 'llm',
+            price: 0,
+            llmProtocol: 'chat-completions',
+          },
+          {
+            provider: 'web-gemini',
+            modelId: 'gemini-image-web-proxy',
+            modelKey: 'web-gemini::gemini-image-web-proxy',
+            name: 'Web Gemini Image',
+            type: 'image',
+            price: 0,
+          },
+        ],
+      },
+    })
+
+    const res = await route.PUT(req, routeContext)
+    expect(res.status).toBe(200)
+
+    const savedProviders = readSavedProvidersFromUpsert()
+    expect(savedProviders[0]?.gatewayRoute).toBe('openai-compat')
+
+    const savedModels = readSavedModelsFromUpsert()
+    expect(savedModels).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          provider: 'web-gemini',
+          modelId: 'gemini-web-proxy',
+          llmProtocol: 'chat-completions',
+        }),
+        expect.objectContaining({
+          provider: 'web-gemini',
+          modelId: 'gemini-image-web-proxy',
+          compatMediaTemplate: expect.objectContaining({
+            mediaType: 'image',
+            create: expect.objectContaining({
+              path: '/images/generations',
+            }),
+          }),
+        }),
+      ]),
+    )
+  })
+
   it('requires llmProtocol when adding a new openai-compatible llm model', async () => {
     installAuthMocks()
     mockAuthenticated('user-1')

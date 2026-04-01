@@ -141,6 +141,14 @@ export async function handleCharacterImageTask(job: Job<TaskJobData>) {
   const imageUrls = parseImageUrls(appearance.imageUrls, 'characterAppearance.imageUrls')
   const nextImageUrls = [...imageUrls]
   const label = `${characterName} - ${appearance.changeReason || '形象'}`
+  const resolveMainImage = () => {
+    const selectedIndex = appearance.selectedIndex
+    const fallbackMain = nextImageUrls.find((url) => typeof url === 'string' && url) || appearance.imageUrl
+    if (selectedIndex !== null && selectedIndex !== undefined && nextImageUrls[selectedIndex]) {
+      return nextImageUrls[selectedIndex]
+    }
+    return fallbackMain
+  }
 
   for (let i = 0; i < indexes.length; i++) {
     const index = indexes[i]
@@ -170,22 +178,18 @@ export async function handleCharacterImageTask(job: Job<TaskJobData>) {
       nextImageUrls.push('')
     }
     nextImageUrls[index] = cosKey
+
+    await assertTaskActive(job, 'persist_character_image')
+    await db.characterAppearance.update({
+      where: { id: appearance.id },
+      data: {
+        imageUrls: encodeImageUrls(nextImageUrls),
+        imageUrl: resolveMainImage() || null,
+      },
+    })
   }
 
-  const selectedIndex = appearance.selectedIndex
-  const fallbackMain = nextImageUrls.find((url) => typeof url === 'string' && url) || appearance.imageUrl
-  const mainImage = selectedIndex !== null && selectedIndex !== undefined && nextImageUrls[selectedIndex]
-    ? nextImageUrls[selectedIndex]
-    : fallbackMain
-
-  await assertTaskActive(job, 'persist_character_image')
-  await db.characterAppearance.update({
-    where: { id: appearance.id },
-    data: {
-      imageUrls: encodeImageUrls(nextImageUrls),
-      imageUrl: mainImage || null,
-    },
-  })
+  const mainImage = resolveMainImage()
 
   return {
     appearanceId: appearance.id,

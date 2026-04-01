@@ -3,10 +3,13 @@ import type { ModelGatewayRoute } from './types'
 
 const COMPATIBLE_PROVIDER_KEYS = new Set([
   'openai-compatible',
+  'flow2api',
+  'web-gemini',
 ])
 const OFFICIAL_ONLY_PROVIDER_KEYS = new Set([
   'bailian',
   'siliconflow',
+  'grsai',
 ])
 
 export function isCompatibleProvider(providerId: string): boolean {

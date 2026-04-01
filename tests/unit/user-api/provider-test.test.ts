@@ -13,6 +13,9 @@ const fetchMock = vi.hoisted(() =>
     if (url.includes('api.siliconflow.cn/v1/user/info')) {
       return new Response(JSON.stringify({ data: { balance: '12.3000' } }), { status: 200 })
     }
+    if (url.includes('grsai.dakka.com.cn/v1/draw/result')) {
+      return new Response(JSON.stringify({ code: -22, msg: 'task not found' }), { status: 200 })
+    }
     return new Response('not-found', { status: 404 })
   }),
 )
@@ -131,5 +134,27 @@ describe('provider test connection', () => {
       status: 'fail',
       message: 'Network error: socket hang up',
     })
+  })
+
+  it('passes grsai probe with result endpoint and credits skip', async () => {
+    const result = await testProviderConnection({
+      apiType: 'grsai',
+      apiKey: 'grs-key',
+    })
+
+    expect(result.success).toBe(true)
+    expect(result.steps).toEqual([
+      {
+        name: 'models',
+        status: 'pass',
+        message: 'Image result probe reachable',
+        detail: 'task not found',
+      },
+      {
+        name: 'credits',
+        status: 'skip',
+        message: 'Not supported by GRSAI probe API',
+      },
+    ])
   })
 })

@@ -13,6 +13,7 @@ export interface VideoPanelCardShellProps {
   runningVoiceLineIds?: Set<string>
   matchedVoiceLines?: MatchedVoiceLine[]
   onLipSync?: (storyboardId: string, panelIndex: number, voiceLineId: string, panelId?: string) => Promise<void>
+  onUploadVideo?: (panelId: string, file: File) => Promise<void>
   showLipSyncVideo: boolean
   onToggleLipSyncVideo: (panelKey: string, value: boolean) => void
   isLinked: boolean

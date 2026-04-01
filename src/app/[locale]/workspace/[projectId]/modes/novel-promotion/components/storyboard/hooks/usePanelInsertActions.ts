@@ -3,7 +3,7 @@ import { logInfo as _ulogInfo, logError as _ulogError } from '@/lib/logging/core
 import { useTranslations } from 'next-intl'
 
 import { useCallback, useState } from 'react'
-import { useInsertProjectPanel } from '@/lib/query/hooks'
+import { useCreateProjectPanel, useInsertProjectPanel } from '@/lib/query/hooks'
 import { waitForTaskResult } from '@/lib/task/client'
 import { getErrorMessage, isAbortError, type InsertPanelMutationResult } from './panel-operations-shared'
 
@@ -17,12 +17,14 @@ export function usePanelInsertActions({
   onRefresh,
 }: UsePanelInsertActionsProps) {
   const t = useTranslations('storyboard')
-  const [insertingAfterPanelId, setInsertingAfterPanelId] = useState<string | null>(null)
+  const [aiInsertingAfterPanelId, setAiInsertingAfterPanelId] = useState<string | null>(null)
+  const [manualInsertingAfterPanelId, setManualInsertingAfterPanelId] = useState<string | null>(null)
   const insertPanelMutation = useInsertProjectPanel(projectId)
+  const createPanelMutation = useCreateProjectPanel(projectId)
 
-  const insertPanel = useCallback(async (storyboardId: string, panelId: string, userInput: string) => {
-    if (insertingAfterPanelId) return
-    setInsertingAfterPanelId(panelId)
+  const insertPanelWithAI = useCallback(async (storyboardId: string, panelId: string, userInput: string) => {
+    if (aiInsertingAfterPanelId || manualInsertingAfterPanelId) return
+    setAiInsertingAfterPanelId(panelId)
 
     try {
       const data = await insertPanelMutation.mutateAsync({
@@ -34,7 +36,7 @@ export function usePanelInsertActions({
       if (result.async && result.taskId) {
         const taskId = result.taskId
         _ulogInfo(`[Insert Panel] 占位分镜已创建: #${result.panelNumber}，后台生成内容...`)
-        setInsertingAfterPanelId(null)
+        setAiInsertingAfterPanelId(null)
         await onRefresh()
 
         ; (async () => {
@@ -54,7 +56,7 @@ export function usePanelInsertActions({
       }
 
       await onRefresh()
-      setInsertingAfterPanelId(null)
+      setAiInsertingAfterPanelId(null)
     } catch (error: unknown) {
       if (isAbortError(error)) {
         _ulogInfo('请求被中断（可能是页面刷新）')
@@ -66,12 +68,46 @@ export function usePanelInsertActions({
           error: getErrorMessage(error, t('common.unknownError')),
         }),
       )
-      setInsertingAfterPanelId(null)
+      setAiInsertingAfterPanelId(null)
     }
-  }, [insertPanelMutation, insertingAfterPanelId, onRefresh, t])
+  }, [aiInsertingAfterPanelId, insertPanelMutation, manualInsertingAfterPanelId, onRefresh, t])
+
+  const insertPanelManually = useCallback(async (storyboardId: string, panelId: string, userInput: string) => {
+    if (aiInsertingAfterPanelId || manualInsertingAfterPanelId) return
+    setManualInsertingAfterPanelId(panelId)
+
+    try {
+      await createPanelMutation.mutateAsync({
+        storyboardId,
+        insertAfterPanelId: panelId,
+        shotType: t('variant.defaultShotType'),
+        cameraMove: t('variant.defaultCameraMove'),
+        description: userInput.trim() || t('panel.newPanelDescription'),
+        videoPrompt: '',
+        characters: '[]',
+      })
+      await onRefresh()
+      setManualInsertingAfterPanelId(null)
+    } catch (error: unknown) {
+      if (isAbortError(error)) {
+        _ulogInfo('请求被中断（可能是页面刷新）')
+        return
+      }
+      _ulogError('手动插入分镜失败:', error)
+      alert(
+        t('messages.insertPanelFailed', {
+          error: getErrorMessage(error, t('common.unknownError')),
+        }),
+      )
+      setManualInsertingAfterPanelId(null)
+    }
+  }, [aiInsertingAfterPanelId, createPanelMutation, manualInsertingAfterPanelId, onRefresh, t])
 
   return {
-    insertingAfterPanelId,
-    insertPanel,
+    aiInsertingAfterPanelId,
+    manualInsertingAfterPanelId,
+    insertingAfterPanelId: aiInsertingAfterPanelId || manualInsertingAfterPanelId,
+    insertPanelWithAI,
+    insertPanelManually,
   }
 }

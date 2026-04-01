@@ -148,7 +148,8 @@
         "generateMultiple": "Generate multiple candidates",
         "generateCount": "Generate {count}",
         "generateCountSuffix": "candidates",
-        "undoShort": "Back"
+        "undoShort": "Back",
+        "upload": "Upload storyboard image"
     },
     "candidate": {
         "title": "Select Candidate Image",
@@ -248,6 +249,7 @@
         "regenerateGroupFailed": "Regenerate storyboard failed: {error}",
         "addGroupFailed": "Add storyboard group failed: {error}",
         "moveGroupFailed": "Move storyboard group failed: {error}",
+        "uploadPanelFailed": "Upload storyboard image failed: {error}",
         "batchGenerateCompleted": "Batch generation completed:\nSucceeded: {succeeded}\nFailed: {failed}\n\nSample errors: {errors}",
         "batchGenerateFailed": "Batch generation failed: {error}"
     },

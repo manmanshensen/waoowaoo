@@ -346,6 +346,198 @@
   },
   {
     "apiType": "image",
+    "provider": "grsai",
+    "modelId": "nano-banana-2",
+    "pricing": {
+      "mode": "capability",
+      "tiers": [
+        {
+          "when": {
+            "resolution": "1K"
+          },
+          "amount": 0.576
+        },
+        {
+          "when": {
+            "resolution": "2K"
+          },
+          "amount": 0.864
+        },
+        {
+          "when": {
+            "resolution": "4K"
+          },
+          "amount": 1.152
+        }
+      ]
+    }
+  },
+  {
+    "apiType": "image",
+    "provider": "grsai",
+    "modelId": "nano-banana-2-cl",
+    "pricing": {
+      "mode": "capability",
+      "tiers": [
+        {
+          "when": {
+            "resolution": "1K"
+          },
+          "amount": 0.576
+        },
+        {
+          "when": {
+            "resolution": "2K"
+          },
+          "amount": 0.864
+        }
+      ]
+    }
+  },
+  {
+    "apiType": "image",
+    "provider": "grsai",
+    "modelId": "nano-banana-2-4k-cl",
+    "pricing": {
+      "mode": "flat",
+      "flatAmount": 1.152
+    }
+  },
+  {
+    "apiType": "image",
+    "provider": "grsai",
+    "modelId": "nano-banana-fast",
+    "pricing": {
+      "mode": "flat",
+      "flatAmount": 0.576
+    }
+  },
+  {
+    "apiType": "image",
+    "provider": "grsai",
+    "modelId": "nano-banana",
+    "pricing": {
+      "mode": "flat",
+      "flatAmount": 0.864
+    }
+  },
+  {
+    "apiType": "image",
+    "provider": "grsai",
+    "modelId": "nano-banana-pro",
+    "pricing": {
+      "mode": "capability",
+      "tiers": [
+        {
+          "when": {
+            "resolution": "1K"
+          },
+          "amount": 0.576
+        },
+        {
+          "when": {
+            "resolution": "2K"
+          },
+          "amount": 0.9648
+        },
+        {
+          "when": {
+            "resolution": "4K"
+          },
+          "amount": 1.728
+        }
+      ]
+    }
+  },
+  {
+    "apiType": "image",
+    "provider": "grsai",
+    "modelId": "nano-banana-pro-vt",
+    "pricing": {
+      "mode": "capability",
+      "tiers": [
+        {
+          "when": {
+            "resolution": "1K"
+          },
+          "amount": 0.576
+        },
+        {
+          "when": {
+            "resolution": "2K"
+          },
+          "amount": 0.9648
+        },
+        {
+          "when": {
+            "resolution": "4K"
+          },
+          "amount": 1.728
+        }
+      ]
+    }
+  },
+  {
+    "apiType": "image",
+    "provider": "grsai",
+    "modelId": "nano-banana-pro-cl",
+    "pricing": {
+      "mode": "capability",
+      "tiers": [
+        {
+          "when": {
+            "resolution": "1K"
+          },
+          "amount": 0.576
+        },
+        {
+          "when": {
+            "resolution": "2K"
+          },
+          "amount": 0.9648
+        },
+        {
+          "when": {
+            "resolution": "4K"
+          },
+          "amount": 1.728
+        }
+      ]
+    }
+  },
+  {
+    "apiType": "image",
+    "provider": "grsai",
+    "modelId": "nano-banana-pro-vip",
+    "pricing": {
+      "mode": "capability",
+      "tiers": [
+        {
+          "when": {
+            "resolution": "1K"
+          },
+          "amount": 0.576
+        },
+        {
+          "when": {
+            "resolution": "2K"
+          },
+          "amount": 0.9648
+        }
+      ]
+    }
+  },
+  {
+    "apiType": "image",
+    "provider": "grsai",
+    "modelId": "nano-banana-pro-4k-vip",
+    "pricing": {
+      "mode": "flat",
+      "flatAmount": 1.728
+    }
+  },
+  {
+    "apiType": "image",
     "provider": "legacy",
     "modelId": "banana-2k",
     "pricing": {

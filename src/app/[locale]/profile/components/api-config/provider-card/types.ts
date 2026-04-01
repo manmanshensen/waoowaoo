@@ -57,6 +57,6 @@ export type ProviderCardTranslator = (
  */
 export const VERIFIABLE_PROVIDER_KEYS = new Set([
   'ark', 'google', 'openrouter', 'minimax', 'fal', 'vidu',
-  'bailian', 'siliconflow',
-  'openai-compatible', 'gemini-compatible',
+  'bailian', 'siliconflow', 'grsai',
+  'openai-compatible', 'gemini-compatible', 'web-gemini',
 ])

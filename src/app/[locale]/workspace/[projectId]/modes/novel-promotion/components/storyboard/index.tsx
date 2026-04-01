@@ -61,6 +61,8 @@ export default function StoryboardStage({
     submittingStoryboardTextIds,
     addingStoryboardGroup,
     movingClipId,
+    aiInsertingAfterPanelId,
+    manualInsertingAfterPanelId,
     insertingAfterPanelId,
     savePanelWithData,
     addPanel,
@@ -69,7 +71,8 @@ export default function StoryboardStage({
     regenerateStoryboardText,
     addStoryboardGroup,
     moveStoryboardGroup,
-    insertPanel,
+    insertPanelWithAI,
+    insertPanelManually,
 
     submittingVariantPanelId,
     generatePanelVariant,
@@ -85,6 +88,7 @@ export default function StoryboardStage({
     previewImage,
     setPreviewImage,
     regeneratePanelImage,
+    uploadPanelImage,
     regenerateAllPanelsIndividually,
     selectPanelCandidate,
     selectPanelCandidateIndex,
@@ -179,6 +183,8 @@ export default function StoryboardStage({
           submittingPanelImageIds={submittingPanelImageIds}
 
           movingClipId={movingClipId}
+          aiInsertingAfterPanelId={aiInsertingAfterPanelId}
+          manualInsertingAfterPanelId={manualInsertingAfterPanelId}
           insertingAfterPanelId={insertingAfterPanelId}
           submittingVariantPanelId={submittingVariantPanelId}
           projectId={projectId}
@@ -204,6 +210,7 @@ export default function StoryboardStage({
           onRemoveLocation={handleRemoveLocation}
           onRetryPanelSave={retrySave}
           onRegeneratePanelImage={regeneratePanelImage}
+          onUploadPanelImage={uploadPanelImage}
           onOpenEditModal={(storyboardId, panelIndex) => setEditingPanel({ storyboardId, panelIndex })}
           onOpenAIDataModal={(storyboardId, panelIndex) => setAIDataPanel({ storyboardId, panelIndex })}
           getPanelCandidates={getPanelCandidates}
@@ -211,7 +218,8 @@ export default function StoryboardStage({
           onConfirmPanelCandidate={selectPanelCandidate}
           onCancelPanelCandidate={cancelPanelCandidate}
 
-          onInsertPanel={insertPanel}
+          onInsertPanelWithAI={insertPanelWithAI}
+          onInsertPanelManually={insertPanelManually}
           onPanelVariant={generatePanelVariant}
           addStoryboardGroup={addStoryboardGroup}
           addingStoryboardGroup={addingStoryboardGroup}

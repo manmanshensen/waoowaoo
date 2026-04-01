@@ -11,6 +11,7 @@ import {
   getProviderConfig,
   getProviderKey,
 } from '../api-config'
+import { toAiRuntimeError } from '@/lib/ai-runtime/errors'
 import type { ChatCompletionOptions, ChatCompletionStreamCallbacks } from './types'
 import { extractGoogleParts, extractGoogleUsage, GoogleEmptyResponseError } from './providers/google'
 import { buildOpenAIChatCompletion } from './providers/openai-compat'
@@ -38,9 +39,18 @@ import { getCompletionParts } from './completion-parts'
 import { withStreamChunkTimeout } from './stream-timeout'
 import { shouldUseOpenAIReasoningProviderOptions } from './reasoning-capability'
 import { completeBailianLlm } from '@/lib/providers/bailian'
+import { completeGrsaiLlm } from '@/lib/providers/grsai'
 import { completeSiliconFlowLlm } from '@/lib/providers/siliconflow'
 
-const OFFICIAL_ONLY_PROVIDER_KEYS = new Set(['bailian', 'siliconflow'])
+const OFFICIAL_ONLY_PROVIDER_KEYS = new Set(['bailian', 'grsai', 'siliconflow'])
+const OPENAI_COMPAT_PROVIDER_KEYS = new Set(['openai-compatible', 'flow2api', 'web-gemini'])
+
+function assertNonEmptyTextResponse(providerKey: string, modelId: string, text: string): void {
+  if (text.trim().length > 0) return
+  throw toAiRuntimeError(
+    new Error(`LLM_EMPTY_RESPONSE: ${providerKey}::${modelId} returned empty response`),
+  )
+}
 
 type GoogleModelClient = {
   generateContentStream?: (params: unknown) => Promise<unknown>
@@ -109,7 +119,7 @@ export async function chatCompletionStream(
     if (gatewayRoute === 'openai-compat') {
       // openai-compatible protocol probing only applies to openai-compatible + llm.
       // gemini-compatible is explicitly excluded and must not enter this branch.
-      if (providerKey !== 'openai-compatible') {
+      if (!OPENAI_COMPAT_PROVIDER_KEYS.has(providerKey)) {
         throw new Error(`OPENAI_COMPAT_PROVIDER_UNSUPPORTED: ${provider}`)
       }
       if (!selection.llmProtocol) {
@@ -289,6 +299,53 @@ export async function chatCompletionStream(
         temperature: options.temperature ?? 0.7,
       })
       const completionParts = getCompletionParts(completion)
+      let seq = 1
+      if (completionParts.reasoning) {
+        emitStreamChunk(callbacks, streamStep, {
+          kind: 'reasoning',
+          delta: completionParts.reasoning,
+          seq,
+          lane: 'reasoning',
+        })
+        seq += 1
+      }
+      if (completionParts.text) {
+        emitStreamChunk(callbacks, streamStep, {
+          kind: 'text',
+          delta: completionParts.text,
+          seq,
+          lane: 'main',
+        })
+      }
+      logLlmRawOutput({
+        userId,
+        projectId,
+        provider: providerKey,
+        modelId: resolvedModelId,
+        modelKey: selection.modelKey,
+        stream: true,
+        action: options.action,
+        text: completionParts.text,
+        reasoning: completionParts.reasoning,
+        usage: completionUsageSummary(completion),
+      })
+      recordCompletionUsage(resolvedModelId, completion)
+      emitStreamStage(callbacks, streamStep, 'completed', providerKey)
+      callbacks?.onComplete?.(completionParts.text, streamStep)
+      return completion
+    }
+
+    if (providerKey === 'grsai') {
+      emitStreamStage(callbacks, streamStep, 'streaming', providerKey)
+      const completion = await completeGrsaiLlm({
+        modelId: resolvedModelId,
+        messages,
+        apiKey: providerConfig.apiKey,
+        baseUrl: providerConfig.baseUrl,
+        temperature: options.temperature ?? 0.7,
+      })
+      const completionParts = getCompletionParts(completion)
+      assertNonEmptyTextResponse(providerKey, resolvedModelId, completionParts.text)
       let seq = 1
       if (completionParts.reasoning) {
         emitStreamChunk(callbacks, streamStep, {

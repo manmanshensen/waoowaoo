@@ -58,6 +58,7 @@ next-env.d.ts
 .env.local
 .env.test
 .env.*.local
+google-credentials.json
 docker-logs/
 
 # database

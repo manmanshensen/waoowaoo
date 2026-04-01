@@ -43,6 +43,7 @@ export interface StoryboardGroupProps {
   onRemoveLocation: (panel: StoryboardPanel) => void
   onRetryPanelSave: (panelId: string) => void
   onRegeneratePanelImage: (panelId: string, count?: number, force?: boolean) => void
+  onUploadPanelImage: (panelId: string, file: File) => Promise<void>
   onOpenEditModal: (panelIndex: number) => void
   onOpenAIDataModal: (panelIndex: number) => void
   getPanelCandidates: (panel: NovelPromotionPanel) => { candidates: string[]; selectedIndex: number } | null
@@ -52,7 +53,10 @@ export interface StoryboardGroupProps {
 
   formatClipTitle: (clip: NovelPromotionClip | undefined) => string
   movingClipId: string | null
-  onInsertPanel: (storyboardId: string, insertAfterPanelId: string, userInput: string) => Promise<void>
+  aiInsertingAfterPanelId: string | null
+  manualInsertingAfterPanelId: string | null
+  onInsertPanelWithAI: (storyboardId: string, insertAfterPanelId: string, userInput: string) => Promise<void>
+  onInsertPanelManually: (storyboardId: string, insertAfterPanelId: string, userInput: string) => Promise<void>
   insertingAfterPanelId: string | null
   projectId: string
   episodeId: string

@@ -41,6 +41,7 @@ interface VideoRenderPanelProps {
   ) => Promise<void>
   onUpdatePanelVideoModel: (storyboardId: string, panelIndex: number, model: string) => Promise<void>
   onLipSync: (storyboardId: string, panelIndex: number, voiceLineId: string, panelId?: string) => Promise<void>
+  onUploadVideo: (panelId: string, file: File) => Promise<void>
   onToggleLink: (panelKey: string, storyboardId: string, panelIndex: number) => Promise<void>
   onFlModelChange: (model: string) => void
   onFlCapabilityChange: (field: string, rawValue: string) => void
@@ -95,6 +96,7 @@ export default function VideoRenderPanel({
   onGenerateVideo,
   onUpdatePanelVideoModel,
   onLipSync,
+  onUploadVideo,
   onToggleLink,
   onFlModelChange,
   onFlCapabilityChange,
@@ -158,6 +160,7 @@ export default function VideoRenderPanel({
                 runningVoiceLineIds={runningVoiceLineIds}
                 matchedVoiceLines={panelVoiceLines.get(panelKey) || []}
                 onLipSync={onLipSync}
+                onUploadVideo={onUploadVideo}
                 showLipSyncVideo={panelVideoPreference.get(panelKey) ?? true}
                 onToggleLipSyncVideo={onToggleLipSyncVideo}
                 isLinked={isLinked}

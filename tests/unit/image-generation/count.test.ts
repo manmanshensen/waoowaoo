@@ -15,6 +15,7 @@ describe('image generation count helpers', () => {
   })
 
   it('normalizes values within each scope range', () => {
+    expect(normalizeImageGenerationCount('character', undefined)).toBe(1)
     expect(normalizeImageGenerationCount('character', 0)).toBe(1)
     expect(normalizeImageGenerationCount('character', 8)).toBe(6)
     expect(normalizeImageGenerationCount('storyboard-candidates', 0)).toBe(1)
@@ -44,5 +45,9 @@ describe('image generation count helpers', () => {
       getImageGenerationCountConfig('storyboard-candidates').storageKey,
       '4',
     )
+  })
+
+  it('uses one image as the default character count', () => {
+    expect(getImageGenerationCountConfig('character').defaultValue).toBe(1)
   })
 })

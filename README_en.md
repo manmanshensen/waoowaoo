@@ -68,6 +68,32 @@ git pull
 docker compose down && docker compose up -d --build
 ```
 
+### Method 2.5: Docker Hot-Reload Development (Recommended for daily coding)
+
+If you want to keep using Docker during development but avoid rebuilding the full `app` image on every code change, use `app-dev`:
+
+```bash
+git clone https://github.com/saturndec/waoowaoo.git
+cd waoowaoo
+
+# Start infrastructure first
+docker compose up -d mysql redis minio
+
+# Start the hot-reload development service
+docker compose up app-dev
+```
+
+Endpoints:
+```text
+App: http://localhost:13001
+Bull Board: http://localhost:13011/admin/queues
+```
+
+Notes:
+- `app-dev` mounts the current source tree and reloads on file changes
+- Use `app-dev` for day-to-day development
+- Use `docker compose up -d --build app` only when you need to verify the production image or prepare deployment
+
 ### Method 3: Local Development (For Developers)
 
 ```bash

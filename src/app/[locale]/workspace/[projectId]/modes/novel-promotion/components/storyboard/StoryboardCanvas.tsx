@@ -24,6 +24,8 @@ interface StoryboardCanvasProps {
   modifyingPanels: Set<string>
   submittingPanelImageIds: Set<string>
   movingClipId: string | null
+  aiInsertingAfterPanelId: string | null
+  manualInsertingAfterPanelId: string | null
   insertingAfterPanelId: string | null
   submittingVariantPanelId: string | null
   projectId: string
@@ -53,13 +55,15 @@ interface StoryboardCanvasProps {
   onRemoveLocation: (panel: StoryboardPanel, storyboardId: string) => void
   onRetryPanelSave: (panelId: string) => void
   onRegeneratePanelImage: (panelId: string, count?: number, force?: boolean) => void
+  onUploadPanelImage: (panelId: string, file: File) => Promise<void>
   onOpenEditModal: (storyboardId: string, panelIndex: number) => void
   onOpenAIDataModal: (storyboardId: string, panelIndex: number) => void
   getPanelCandidates: (panel: NovelPromotionPanel) => { candidates: string[]; selectedIndex: number } | null
   onSelectPanelCandidateIndex: (panelId: string, index: number) => void
   onConfirmPanelCandidate: (panelId: string, imageUrl: string) => Promise<void>
   onCancelPanelCandidate: (panelId: string) => void
-  onInsertPanel: (storyboardId: string, insertAfterPanelId: string, userInput: string) => Promise<void>
+  onInsertPanelWithAI: (storyboardId: string, insertAfterPanelId: string, userInput: string) => Promise<void>
+  onInsertPanelManually: (storyboardId: string, insertAfterPanelId: string, userInput: string) => Promise<void>
   onPanelVariant: (
     sourcePanelId: string,
     storyboardId: string,
@@ -86,6 +90,8 @@ export default function StoryboardCanvas({
   modifyingPanels,
   submittingPanelImageIds,
   movingClipId,
+  aiInsertingAfterPanelId,
+  manualInsertingAfterPanelId,
   insertingAfterPanelId,
   submittingVariantPanelId,
   projectId,
@@ -111,13 +117,15 @@ export default function StoryboardCanvas({
   onRemoveLocation,
   onRetryPanelSave,
   onRegeneratePanelImage,
+  onUploadPanelImage,
   onOpenEditModal,
   onOpenAIDataModal,
   getPanelCandidates,
   onSelectPanelCandidateIndex,
   onConfirmPanelCandidate,
   onCancelPanelCandidate,
-  onInsertPanel,
+  onInsertPanelWithAI,
+  onInsertPanelManually,
   onPanelVariant,
   addStoryboardGroup,
   addingStoryboardGroup,
@@ -184,6 +192,7 @@ export default function StoryboardCanvas({
               onRemoveLocation={(panel) => onRemoveLocation(panel, storyboard.id)}
               onRetryPanelSave={onRetryPanelSave}
               onRegeneratePanelImage={onRegeneratePanelImage}
+              onUploadPanelImage={onUploadPanelImage}
               onOpenEditModal={(panelIndex) => onOpenEditModal(storyboard.id, panelIndex)}
               onOpenAIDataModal={(panelIndex) => onOpenAIDataModal(storyboard.id, panelIndex)}
               getPanelCandidates={getPanelCandidates}
@@ -192,8 +201,11 @@ export default function StoryboardCanvas({
               onCancelPanelCandidate={onCancelPanelCandidate}
               formatClipTitle={formatClipTitle}
               movingClipId={movingClipId}
-              onInsertPanel={onInsertPanel}
+              aiInsertingAfterPanelId={aiInsertingAfterPanelId}
+              manualInsertingAfterPanelId={manualInsertingAfterPanelId}
               insertingAfterPanelId={insertingAfterPanelId}
+              onInsertPanelWithAI={onInsertPanelWithAI}
+              onInsertPanelManually={onInsertPanelManually}
               projectId={projectId}
               episodeId={episodeId}
               onPanelVariant={onPanelVariant}

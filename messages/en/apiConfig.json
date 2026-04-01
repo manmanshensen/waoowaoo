@@ -176,7 +176,9 @@
       "vidu_step1": "Go to the Vidu platform and click 'Create API Key'",
       "openai_compatible_step1": "Enter any OpenAI-compatible service Base URL and API key",
       "gemini_compatible_step1": "Enter any Gemini-compatible service Base URL and API key",
+      "web_gemini_step1": "Enter the local Web Gemini Base URL (default http://127.0.0.1:4000/v1) and API key. If auth is disabled, use any non-empty string.",
       "bailian_step1": "Go to Alibaba Cloud Bailian console and get an API Key",
+      "grsai_step1": "Go to the GRSAI channel console and get an API Key",
       "siliconflow_step1": "Go to SiliconFlow console and create an API Key"
     }
   },

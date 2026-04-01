@@ -11,6 +11,7 @@ import {
   getProviderConfig,
   getProviderKey,
 } from '../api-config'
+import { toAiRuntimeError } from '@/lib/ai-runtime/errors'
 import { getInternalLLMStreamCallbacks } from '../llm-observe/internal-stream-context'
 import type { ChatCompletionOptions } from './types'
 import { extractGoogleParts, extractGoogleUsage, GoogleEmptyResponseError } from './providers/google'
@@ -35,9 +36,11 @@ import {
   resolveLlmRuntimeModel,
 } from './runtime-shared'
 import { completeBailianLlm } from '@/lib/providers/bailian'
+import { completeGrsaiLlm } from '@/lib/providers/grsai'
 import { completeSiliconFlowLlm } from '@/lib/providers/siliconflow'
 
-const OFFICIAL_ONLY_PROVIDER_KEYS = new Set(['bailian', 'siliconflow'])
+const OFFICIAL_ONLY_PROVIDER_KEYS = new Set(['bailian', 'grsai', 'siliconflow'])
+const OPENAI_COMPAT_PROVIDER_KEYS = new Set(['openai-compatible', 'flow2api', 'web-gemini'])
 
 function toRecord(value: unknown): Record<string, unknown> | null {
   return value && typeof value === 'object' ? (value as Record<string, unknown>) : null
@@ -48,6 +51,13 @@ function errorMessage(error: unknown): string {
   const record = toRecord(error)
   if (record && typeof record.message === 'string') return record.message
   return 'unknown error'
+}
+
+function assertNonEmptyTextResponse(providerKey: string, modelId: string, text: string): void {
+  if (text.trim().length > 0) return
+  throw toAiRuntimeError(
+    new Error(`LLM_EMPTY_RESPONSE: ${providerKey}::${modelId} returned empty response`),
+  )
 }
 
 
@@ -116,7 +126,7 @@ export async function chatCompletion(
       if (gatewayRoute === 'openai-compat') {
         // openai-compatible protocol probing only applies to openai-compatible + llm.
         // gemini-compatible is explicitly excluded and must not enter this branch.
-        if (providerKey !== 'openai-compatible') {
+        if (!OPENAI_COMPAT_PROVIDER_KEYS.has(providerKey)) {
           throw new Error(`OPENAI_COMPAT_PROVIDER_UNSUPPORTED: ${provider}`)
         }
         if (!selection.llmProtocol) {
@@ -251,6 +261,43 @@ export async function chatCompletion(
           temperature,
         })
         const completionParts = getCompletionParts(completion)
+        logLlmRawOutput({
+          userId,
+          projectId,
+          provider: providerKey,
+          modelId: resolvedModelId,
+          modelKey: selection.modelKey,
+          stream: false,
+          action: options.action,
+          text: completionParts.text,
+          reasoning: completionParts.reasoning,
+          usage: completionUsageSummary(completion),
+        })
+        recordCompletionUsage(resolvedModelId, completion)
+        llmLogger.info({
+          action: 'llm.call.success',
+          message: 'llm call succeeded',
+          provider: providerKey,
+          durationMs: Date.now() - attemptStartedAt,
+          details: {
+            model: resolvedModelId,
+            attempt,
+            maxRetries,
+          },
+        })
+        return completion
+      }
+
+      if (providerKey === 'grsai') {
+        const completion = await completeGrsaiLlm({
+          modelId: resolvedModelId,
+          messages,
+          apiKey: providerConfig.apiKey,
+          baseUrl: providerConfig.baseUrl,
+          temperature,
+        })
+        const completionParts = getCompletionParts(completion)
+        assertNonEmptyTextResponse(providerKey, resolvedModelId, completionParts.text)
         logLlmRawOutput({
           userId,
           projectId,
@@ -502,8 +549,9 @@ export async function chatCompletion(
       }
 
       // Google Gemini 返回空响应时，视为可重试错误（不抛出，继续重试循环）
-      if (error instanceof GoogleEmptyResponseError) {
-        _ulogWarn(`[LLM] Google 返回空响应，将重试 (${attempt}/${maxRetries + 1}): ${errorMessage(error)}`)
+      const runtimeError = toAiRuntimeError(error)
+      if (error instanceof GoogleEmptyResponseError || runtimeError.code === 'EMPTY_RESPONSE') {
+        _ulogWarn(`[LLM] 模型返回空响应，将重试 (${attempt}/${maxRetries + 1}): ${errorMessage(error)}`)
         if (attempt > maxRetries) break
         const delayMs = Math.min(2000 * attempt, 8000)
         await new Promise((resolve) => setTimeout(resolve, delayMs))

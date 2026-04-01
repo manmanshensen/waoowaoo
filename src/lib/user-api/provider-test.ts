@@ -1,5 +1,6 @@
 import OpenAI from 'openai'
 import { setProxy } from '../../../lib/prompts/proxy'
+import { resolveFlow2ApiRuntimeBaseUrl, resolveWebGeminiRuntimeBaseUrl } from '@/lib/flow2api-config'
 
 export type TestStepName = 'models' | 'textGen' | 'imageGen' | 'credits' | 'audioGen'
 export type TestStepStatus = 'pass' | 'fail' | 'skip'
@@ -19,8 +20,9 @@ export interface TestProviderResult {
 
 type PresetProviderType = 'ark' | 'google' | 'openrouter' | 'minimax' | 'fal' | 'vidu'
   | 'bailian'
+  | 'grsai'
   | 'siliconflow'
-type CompatibleProviderType = 'openai-compatible' | 'gemini-compatible'
+type CompatibleProviderType = 'openai-compatible' | 'gemini-compatible' | 'flow2api' | 'web-gemini'
 
 type TestProviderPayload = {
   apiType: CompatibleProviderType | PresetProviderType
@@ -59,6 +61,22 @@ interface ProbeAttempt {
   url: string
   status?: number
   note: string
+}
+
+type CompatibleTimeoutProfile = CompatibleProviderType
+
+function readPositiveIntegerEnv(name: string): number | undefined {
+  const raw = process.env[name]
+  if (typeof raw !== 'string') return undefined
+  const parsed = Number.parseInt(raw.trim(), 10)
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : undefined
+}
+
+function getCompatibleProbeTimeoutMs(profile: CompatibleTimeoutProfile, phase: 'get' | 'llm'): number {
+  if (profile === 'web-gemini') {
+    return readPositiveIntegerEnv('WEB_GEMINI_TEST_TIMEOUT_MS') ?? 90_000
+  }
+  return phase === 'get' ? 15_000 : 30_000
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -146,6 +164,7 @@ async function runCompatibleGetProbe(params: {
   apiKey: string
   onSuccessMessage: (payload: unknown) => string
   unsupportedMessage: string
+  timeoutMs: number
 }): Promise<CompatibleProbeResult> {
   const attempts: ProbeAttempt[] = []
   const headers = { Authorization: `Bearer ${params.apiKey}` }
@@ -156,7 +175,7 @@ async function runCompatibleGetProbe(params: {
       const response = await fetch(url, {
         method: 'GET',
         headers,
-        signal: AbortSignal.timeout(15_000),
+        signal: AbortSignal.timeout(params.timeoutMs),
       })
       const bodyText = await response.text().catch(() => '')
       attempts.push({
@@ -253,12 +272,12 @@ async function runCompatibleGetProbe(params: {
   }
 }
 
-async function runCompatibleLlmFallback(baseUrl: string, apiKey: string, llmModel: string): Promise<TestStep> {
+async function runCompatibleLlmFallback(baseUrl: string, apiKey: string, llmModel: string, timeoutMs: number): Promise<TestStep> {
   try {
     const client = new OpenAI({
       apiKey,
       baseURL: baseUrl,
-      timeout: 30_000,
+      timeout: timeoutMs,
     })
     const response = await client.chat.completions.create({
       model: llmModel,
@@ -283,7 +302,14 @@ async function runCompatibleLlmFallback(baseUrl: string, apiKey: string, llmMode
   }
 }
 
-async function testCompatibleProvider(baseUrl: string, apiKey: string, llmModel?: string): Promise<TestProviderResult> {
+async function testCompatibleProvider(
+  baseUrl: string,
+  apiKey: string,
+  llmModel?: string,
+  timeoutProfile: CompatibleTimeoutProfile = 'openai-compatible',
+): Promise<TestProviderResult> {
+  const getTimeoutMs = getCompatibleProbeTimeoutMs(timeoutProfile, 'get')
+  const llmTimeoutMs = getCompatibleProbeTimeoutMs(timeoutProfile, 'llm')
   const modelProbe = await runCompatibleGetProbe({
     stepName: 'models',
     urls: buildCompatibleProbeUrls(baseUrl, ['/models']),
@@ -293,6 +319,7 @@ async function testCompatibleProvider(baseUrl: string, apiKey: string, llmModel?
       return typeof count === 'number' ? `Found ${count} models` : 'Models endpoint reachable'
     },
     unsupportedMessage: 'Model list endpoint not supported by this compatible provider',
+    timeoutMs: getTimeoutMs,
   })
 
   const creditProbe = await runCompatibleGetProbe({
@@ -301,6 +328,7 @@ async function testCompatibleProvider(baseUrl: string, apiKey: string, llmModel?
     apiKey,
     onSuccessMessage: (payload) => parseCreditsMessage(payload) || 'Credits endpoint reachable',
     unsupportedMessage: 'Credits endpoint not supported by this compatible provider',
+    timeoutMs: getTimeoutMs,
   })
 
   const steps: TestStep[] = [modelProbe.step, creditProbe.step]
@@ -324,7 +352,7 @@ async function testCompatibleProvider(baseUrl: string, apiKey: string, llmModel?
     return { success: false, steps }
   }
 
-  const llmStep = await runCompatibleLlmFallback(baseUrl, apiKey, fallbackModel)
+  const llmStep = await runCompatibleLlmFallback(baseUrl, apiKey, fallbackModel, llmTimeoutMs)
   steps.push(llmStep)
   return {
     success: llmStep.status === 'pass',
@@ -829,6 +857,70 @@ async function testBailianProvider(apiKey: string): Promise<TestProviderResult> 
 }
 
 // ---------------------------------------------------------------------------
+// GRSAI (zero-cost image result probe)
+// ---------------------------------------------------------------------------
+
+async function testGrsaiProvider(apiKey: string): Promise<TestProviderResult> {
+  const steps: TestStep[] = []
+
+  try {
+    const response = await fetch('https://grsai.dakka.com.cn/v1/draw/result', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ id: 'probe' }),
+      signal: AbortSignal.timeout(20_000),
+    })
+    if (!response.ok) {
+      const fail = classifyProbeFailure(response.status)
+      const detail = await response.text().catch(() => '')
+      steps.push({
+        name: 'models',
+        status: fail.status,
+        message: fail.message,
+        detail: detail.slice(0, 500),
+      })
+      steps.push({
+        name: 'credits',
+        status: 'skip',
+        message: 'Not supported by GRSAI probe API',
+      })
+      return { success: false, steps }
+    }
+
+    const payload = await response.json() as { code?: unknown; msg?: unknown }
+    const code = typeof payload.code === 'number' ? payload.code : null
+    const ok = code === 0 || code === -22
+    steps.push({
+      name: 'models',
+      status: ok ? 'pass' : 'fail',
+      message: ok ? 'Image result probe reachable' : `Provider error (${code ?? 'unknown'})`,
+      detail: typeof payload.msg === 'string' ? payload.msg.slice(0, 500) : undefined,
+    })
+    steps.push({
+      name: 'credits',
+      status: 'skip',
+      message: 'Not supported by GRSAI probe API',
+    })
+    return { success: ok, steps }
+  } catch (error) {
+    steps.push({
+      name: 'models',
+      status: 'fail',
+      message: toNetworkErrorMessage(error),
+    })
+    steps.push({
+      name: 'credits',
+      status: 'skip',
+      message: 'Not supported by GRSAI probe API',
+    })
+    return { success: false, steps }
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Public API
 // ---------------------------------------------------------------------------
 
@@ -843,7 +935,7 @@ export async function testProviderConnection(payload: TestProviderPayload): Prom
   }
 
   // Compatible providers require baseUrl
-  if ((apiType === 'openai-compatible' || apiType === 'gemini-compatible') && !baseUrl) {
+  if ((apiType === 'openai-compatible' || apiType === 'gemini-compatible' || apiType === 'flow2api' || apiType === 'web-gemini') && !baseUrl) {
     return {
       success: false,
       steps: [{ name: 'models', status: 'fail', message: 'Missing baseUrl' }],
@@ -852,9 +944,13 @@ export async function testProviderConnection(payload: TestProviderPayload): Prom
 
   switch (apiType) {
     case 'openai-compatible':
-      return testCompatibleProvider(baseUrl!, apiKey, llmModel)
+      return testCompatibleProvider(baseUrl!, apiKey, llmModel, 'openai-compatible')
     case 'gemini-compatible':
-      return testCompatibleProvider(baseUrl!, apiKey, llmModel)
+      return testCompatibleProvider(baseUrl!, apiKey, llmModel, 'gemini-compatible')
+    case 'flow2api':
+      return testCompatibleProvider(resolveFlow2ApiRuntimeBaseUrl('flow2api', baseUrl!)!, apiKey, llmModel, 'flow2api')
+    case 'web-gemini':
+      return testCompatibleProvider(resolveWebGeminiRuntimeBaseUrl('web-gemini', baseUrl!)!, apiKey, llmModel, 'web-gemini')
     case 'ark':
       return testArkProvider(apiKey)
     case 'google':
@@ -869,6 +965,8 @@ export async function testProviderConnection(payload: TestProviderPayload): Prom
       return testViduProvider(apiKey)
     case 'bailian':
       return testBailianProvider(apiKey)
+    case 'grsai':
+      return testGrsaiProvider(apiKey)
     case 'siliconflow':
       return testSiliconFlowProvider(apiKey)
     default:

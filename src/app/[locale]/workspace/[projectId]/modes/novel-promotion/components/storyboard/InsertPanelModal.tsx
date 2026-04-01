@@ -25,7 +25,10 @@ interface InsertPanelModalProps {
     onClose: () => void
     prevPanel: PanelInfo
     nextPanel: PanelInfo | null
-    onInsert: (userInput: string) => Promise<void>
+    onAiInsert: (userInput: string) => Promise<void>
+    onManualInsert: (userInput: string) => Promise<void>
+    isAiInserting: boolean
+    isManualInserting: boolean
     isInserting: boolean
 }
 
@@ -34,7 +37,10 @@ export default function InsertPanelModal({
     onClose,
     prevPanel,
     nextPanel,
-    onInsert,
+    onAiInsert,
+    onManualInsert,
+    isAiInserting,
+    isManualInserting,
     isInserting
 }: InsertPanelModalProps) {
     const t = useTranslations('storyboard')
@@ -65,12 +71,12 @@ export default function InsertPanelModal({
     if (!isOpen || !mounted) return null
 
     const handleInsert = async () => {
-        await onInsert(userInput)
+        await onManualInsert(userInput)
         setUserInput('')
     }
 
     const handleAutoAnalyze = async () => {
-        await onInsert('')
+        await onAiInsert(userInput)
         setUserInput('')
     }
 
@@ -184,7 +190,7 @@ export default function InsertPanelModal({
                             className={`flex-1 py-2.5 rounded-lg font-medium text-sm flex items-center justify-center gap-2 transition-all
                                 ${isInserting ? 'bg-[var(--glass-bg-muted)] text-[var(--glass-text-tertiary)]' : 'bg-[var(--glass-bg-muted)] text-[var(--glass-text-secondary)] hover:bg-[var(--glass-bg-muted)]'}`}
                         >
-                            {isInserting && !userInput ? (
+                            {isAiInserting ? (
                                 <TaskStatusInline state={analyzingState} />
                             ) : (
                                 <>{t('insertModal.aiAnalyze')}</>
@@ -197,7 +203,7 @@ export default function InsertPanelModal({
                             className={`flex-1 py-2.5 rounded-lg font-medium text-sm flex items-center justify-center gap-2 transition-all
                                 ${isInserting || !userInput.trim() ? 'bg-[var(--glass-bg-muted)] text-[var(--glass-text-tertiary)]' : 'bg-[var(--glass-accent-from)] text-white hover:bg-[var(--glass-accent-to)] shadow-[var(--glass-shadow-md)]'}`}
                         >
-                            {isInserting && userInput ? (
+                            {isManualInserting ? (
                                 <TaskStatusInline state={insertingState} />
                             ) : (
                                 <>{t('insertModal.insert')}</>

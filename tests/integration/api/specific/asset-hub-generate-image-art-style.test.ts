@@ -22,6 +22,10 @@ const submitTaskMock = vi.hoisted(() => vi.fn<(input: unknown) => Promise<{
   deduped: false,
 })))
 
+const taskServiceMock = vi.hoisted(() => ({
+  clearSupersededTasksByDedupeKey: vi.fn(async () => ({ clearedTaskIds: [] })),
+}))
+
 const configServiceMock = vi.hoisted(() => ({
   getUserModelConfig: vi.fn(async () => ({
     analysisModel: null,
@@ -62,6 +66,7 @@ const prismaMock = vi.hoisted(() => ({
 
 vi.mock('@/lib/api-auth', () => authMock)
 vi.mock('@/lib/task/submitter', () => ({ submitTask: submitTaskMock }))
+vi.mock('@/lib/task/service', () => taskServiceMock)
 vi.mock('@/lib/config-service', () => configServiceMock)
 vi.mock('@/lib/task/has-output', () => hasOutputMock)
 vi.mock('@/lib/billing', () => billingMock)
@@ -159,5 +164,47 @@ describe('api specific - asset hub generate image art style', () => {
     } | undefined
     expect(submitArg?.payload?.count).toBe(5)
     expect(submitArg?.dedupeKey).toContain(':5')
+  })
+
+  it('clears superseded asset hub tasks before submitting a replacement', async () => {
+    prismaMock.globalCharacterAppearance.findFirst.mockResolvedValueOnce({ artStyle: 'realistic' })
+    const mod = await import('@/app/api/asset-hub/generate-image/route')
+    const req = buildMockRequest({
+      path: '/api/asset-hub/generate-image',
+      method: 'POST',
+      body: {
+        type: 'character',
+        id: 'character-1',
+        appearanceIndex: 0,
+      },
+    })
+
+    const res = await mod.POST(req, { params: Promise.resolve({}) })
+    expect(res.status).toBe(200)
+    expect(taskServiceMock.clearSupersededTasksByDedupeKey).toHaveBeenCalledWith({
+      dedupeKey: 'asset_hub_image:GlobalCharacter:character-1:0:1',
+      userId: 'user-1',
+      reason: 'Superseded by manual regenerate request',
+    })
+  })
+
+  it('submits asset hub manual image generation with a single queue attempt', async () => {
+    prismaMock.globalCharacterAppearance.findFirst.mockResolvedValueOnce({ artStyle: 'realistic' })
+    const mod = await import('@/app/api/asset-hub/generate-image/route')
+    const req = buildMockRequest({
+      path: '/api/asset-hub/generate-image',
+      method: 'POST',
+      body: {
+        type: 'character',
+        id: 'character-1',
+        appearanceIndex: 0,
+      },
+    })
+
+    const res = await mod.POST(req, { params: Promise.resolve({}) })
+    expect(res.status).toBe(200)
+
+    const submitArg = submitTaskMock.mock.calls.at(-1)?.[0] as { maxAttempts?: number } | undefined
+    expect(submitArg?.maxAttempts).toBe(1)
   })
 })

@@ -147,69 +147,78 @@ export const GET = apiHandler(async (
 
   const archive = archiver('zip', { zlib: { level: 9 } })
 
-  const stream = new ReadableStream({
-    start(controller) {
-      archive.on('data', (chunk) => controller.enqueue(chunk))
-      archive.on('end', () => controller.close())
-      archive.on('error', (err) => controller.error(err))
-      processImages()
-    }
+  // 避免流式 zip 在浏览器侧被提前中断，先在服务端完成归档再统一返回。
+  const archiveFinished = new Promise<void>((resolve, reject) => {
+    archive.on('end', () => resolve())
+    archive.on('error', (err) => reject(err))
   })
 
-  async function processImages() {
-    for (const image of indexedImages) {
-      try {
-        _ulogInfo(`Downloading image ${image.index}: ${image.imageUrl}`)
+  const chunks: Uint8Array[] = []
+  archive.on('data', (chunk) => {
+    chunks.push(chunk)
+  })
 
-        let imageData: Buffer
-        let extension = 'png'
-        const storageKey = await resolveStorageKeyFromMediaValue(image.imageUrl)
+  for (const image of indexedImages) {
+    try {
+      _ulogInfo(`Downloading image ${image.index}: ${image.imageUrl}`)
 
-        if (image.imageUrl.startsWith('http://') || image.imageUrl.startsWith('https://')) {
-          // 外部 URL，直接下载
-          const response = await fetch(toFetchableUrl(image.imageUrl))
-          if (!response.ok) {
-            throw new Error(`Failed to fetch: ${response.statusText}`)
-          }
-          const arrayBuffer = await response.arrayBuffer()
-          imageData = Buffer.from(arrayBuffer)
-          const contentType = response.headers.get('content-type')
-          if (contentType?.includes('jpeg') || contentType?.includes('jpg')) {
-            extension = 'jpg'
-          } else if (contentType?.includes('webp')) {
-            extension = 'webp'
-          }
-        } else if (storageKey) {
-          imageData = await getObjectBuffer(storageKey)
+      let imageData: Buffer
+      let extension = 'png'
+      const storageKey = await resolveStorageKeyFromMediaValue(image.imageUrl)
 
-          const keyExt = storageKey.split('.').pop()?.toLowerCase()
-          if (keyExt && ['jpg', 'jpeg', 'png', 'webp', 'gif'].includes(keyExt)) {
-            extension = keyExt === 'jpeg' ? 'jpg' : keyExt
-          }
-        } else {
-          const response = await fetch(toFetchableUrl(image.imageUrl))
-          if (!response.ok) {
-            throw new Error(`Failed to fetch: ${response.statusText}`)
-          }
-          const arrayBuffer = await response.arrayBuffer()
-          imageData = Buffer.from(arrayBuffer)
+      if (image.imageUrl.startsWith('http://') || image.imageUrl.startsWith('https://')) {
+        // 外部 URL，直接下载
+        const response = await fetch(toFetchableUrl(image.imageUrl))
+        if (!response.ok) {
+          throw new Error(`Failed to fetch: ${response.statusText}`)
         }
+        const arrayBuffer = await response.arrayBuffer()
+        imageData = Buffer.from(arrayBuffer)
+        const contentType = response.headers.get('content-type')
+        if (contentType?.includes('jpeg') || contentType?.includes('jpg')) {
+          extension = 'jpg'
+        } else if (contentType?.includes('webp')) {
+          extension = 'webp'
+        }
+      } else if (storageKey) {
+        imageData = await getObjectBuffer(storageKey)
 
-        // 文件名使用描述，清理非法字符
-        const safeDesc = image.description.slice(0, 50).replace(/[\\/:*?"<>|]/g, '_')
-        const fileName = `${String(image.index).padStart(3, '0')}_${safeDesc}.${extension}`
-        archive.append(imageData, { name: fileName })
-        _ulogInfo(`Added ${fileName} to archive`)
-      } catch (error) {
-        _ulogError(`Failed to download image ${image.index}:`, error)
+        const keyExt = storageKey.split('.').pop()?.toLowerCase()
+        if (keyExt && ['jpg', 'jpeg', 'png', 'webp', 'gif'].includes(keyExt)) {
+          extension = keyExt === 'jpeg' ? 'jpg' : keyExt
+        }
+      } else {
+        const response = await fetch(toFetchableUrl(image.imageUrl))
+        if (!response.ok) {
+          throw new Error(`Failed to fetch: ${response.statusText}`)
+        }
+        const arrayBuffer = await response.arrayBuffer()
+        imageData = Buffer.from(arrayBuffer)
       }
-    }
 
-    await archive.finalize()
-    _ulogInfo('Archive finalized')
+      // 文件名使用描述，清理非法字符
+      const safeDesc = image.description.slice(0, 50).replace(/[\\/:*?"<>|]/g, '_')
+      const fileName = `${String(image.index).padStart(3, '0')}_${safeDesc}.${extension}`
+      archive.append(imageData, { name: fileName })
+      _ulogInfo(`Added ${fileName} to archive`)
+    } catch (error) {
+      _ulogError(`Failed to download image ${image.index}:`, error)
+    }
   }
 
-  return new Response(stream, {
+  await archive.finalize()
+  _ulogInfo('Archive finalized')
+  await archiveFinished
+
+  const totalLength = chunks.reduce((acc, chunk) => acc + chunk.length, 0)
+  const result = new Uint8Array(totalLength)
+  let offset = 0
+  for (const chunk of chunks) {
+    result.set(chunk, offset)
+    offset += chunk.length
+  }
+
+  return new Response(result, {
     headers: {
       'Content-Type': 'application/zip',
       'Content-Disposition': `attachment; filename="${encodeURIComponent(project.name)}_images.zip"`

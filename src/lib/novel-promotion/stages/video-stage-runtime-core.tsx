@@ -14,6 +14,7 @@ import {
   useDownloadRemoteBlob,
   useListProjectEpisodeVideoUrls,
   useMatchedVoiceLines,
+  useUploadProjectPanelVideo,
   useUpdateProjectPanelLink,
 } from '@/lib/query/hooks'
 import { useLipSync } from '@/lib/query/hooks/useStoryboards'
@@ -100,6 +101,7 @@ export function useVideoStageRuntime({
 
   const lipSyncMutation = useLipSync(projectId, episodeId)
   const listEpisodeVideoUrlsMutation = useListProjectEpisodeVideoUrls(projectId)
+  const uploadPanelVideoMutation = useUploadProjectPanelVideo(projectId)
   const updatePanelLinkMutation = useUpdateProjectPanelLink(projectId)
   const downloadRemoteBlobMutation = useDownloadRemoteBlob()
   const matchedVoiceLinesQuery = useMatchedVoiceLines(projectId, episodeId)
@@ -317,6 +319,10 @@ export function useVideoStageRuntime({
       throw error
     }
   }, [lipSyncMutation])
+
+  const handleUploadVideo = useCallback(async (panelId: string, file: File) => {
+    await uploadPanelVideoMutation.mutateAsync({ panelId, file })
+  }, [uploadPanelVideoMutation])
 
   const panelBySubmissionKey = useMemo(() => {
     const next = new Map<string, (typeof allPanels)[number]>()
@@ -558,6 +564,7 @@ export function useVideoStageRuntime({
         onGenerateVideo={handleGenerateVideoWithImmediateLock}
         onUpdatePanelVideoModel={onUpdatePanelVideoModel}
         onLipSync={handleLipSync}
+        onUploadVideo={handleUploadVideo}
         onToggleLink={handleToggleLink}
         onFlModelChange={setFlModel}
         onFlCapabilityChange={setFlCapabilityValue}

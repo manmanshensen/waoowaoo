@@ -34,6 +34,7 @@ const createAudioGeneratorMock = vi.hoisted(() => vi.fn(() => ({ generate: audio
 const generateBailianImageMock = vi.hoisted(() => vi.fn(async () => ({ success: true, imageUrl: 'bailian-image' })))
 const generateBailianVideoMock = vi.hoisted(() => vi.fn(async () => ({ success: true, videoUrl: 'bailian-video' })))
 const generateBailianAudioMock = vi.hoisted(() => vi.fn(async () => ({ success: true, audioUrl: 'bailian-audio' })))
+const generateGrsaiImageMock = vi.hoisted(() => vi.fn(async () => ({ success: true, imageUrl: 'grsai-image' })))
 const generateSiliconFlowImageMock = vi.hoisted(() => vi.fn(async () => ({ success: true, imageUrl: 'siliconflow-image' })))
 const generateSiliconFlowVideoMock = vi.hoisted(() => vi.fn(async () => ({ success: true, videoUrl: 'siliconflow-video' })))
 const generateSiliconFlowAudioMock = vi.hoisted(() => vi.fn(async () => ({ success: true, audioUrl: 'siliconflow-audio' })))
@@ -69,6 +70,10 @@ vi.mock('@/lib/providers/bailian', () => ({
   generateBailianImage: generateBailianImageMock,
   generateBailianVideo: generateBailianVideoMock,
   generateBailianAudio: generateBailianAudioMock,
+}))
+
+vi.mock('@/lib/providers/grsai', () => ({
+  generateGrsaiImage: generateGrsaiImageMock,
 }))
 
 vi.mock('@/lib/providers/siliconflow', () => ({
@@ -282,6 +287,29 @@ describe('generator-api gateway routing', () => {
     expect(generateVideoViaOpenAICompatMock).not.toHaveBeenCalled()
     expect(createVideoGeneratorMock).not.toHaveBeenCalled()
     expect(result).toEqual({ success: true, videoUrl: 'siliconflow-video' })
+  })
+
+  it('routes grsai image generation to official provider adapter', async () => {
+    resolveModelSelectionMock.mockResolvedValueOnce({
+      provider: 'grsai',
+      modelId: 'nano-banana-fast',
+      modelKey: 'grsai::nano-banana-fast',
+      mediaType: 'image',
+    })
+    getProviderConfigMock.mockResolvedValueOnce({
+      id: 'grsai',
+      name: 'GRSAI',
+      apiKey: 'grs-key',
+      gatewayRoute: 'official',
+      apiMode: undefined,
+    })
+
+    const result = await generateImage('user-1', 'grsai::nano-banana-fast', 'draw sky')
+
+    expect(generateGrsaiImageMock).toHaveBeenCalledTimes(1)
+    expect(generateImageViaOpenAICompatMock).not.toHaveBeenCalled()
+    expect(createImageGeneratorMock).not.toHaveBeenCalled()
+    expect(result).toEqual({ success: true, imageUrl: 'grsai-image' })
   })
 
   it('routes bailian audio generation to official provider adapter', async () => {

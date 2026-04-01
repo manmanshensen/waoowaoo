@@ -87,6 +87,8 @@ export function useStoryboardStageController({
     submittingStoryboardTextIds,
     addingStoryboardGroup,
     movingClipId,
+    aiInsertingAfterPanelId,
+    manualInsertingAfterPanelId,
     insertingAfterPanelId,
     savePanelWithData,
     debouncedSave,
@@ -100,7 +102,8 @@ export function useStoryboardStageController({
     addCharacterToPanel,
     removeCharacterFromPanel,
     setPanelLocation,
-    insertPanel,
+    insertPanelWithAI,
+    insertPanelManually,
   } = panelOps
 
   const variantOps = usePanelVariant({
@@ -135,6 +138,7 @@ export function useStoryboardStageController({
     cancelPanelCandidate,
     getPanelCandidates,
     modifyPanelImage,
+    uploadPanelImage,
     downloadAllImages,
     clearStoryboardError,
   } = imageOps
@@ -193,13 +197,13 @@ export function useStoryboardStageController({
   return {
     localStoryboards, setLocalStoryboards, sortedStoryboards, expandedClips, toggleExpandedClip,
     getClipInfo, getTextPanels, getPanelEditData, updatePanelEdit, formatClipTitle, totalPanels, storyboardStartIndex,
-    savingPanels, deletingPanelIds, saveStateByPanel, hasUnsavedByPanel, submittingStoryboardTextIds, addingStoryboardGroup, movingClipId, insertingAfterPanelId,
-    savePanelWithData, addPanel, deletePanel, deleteStoryboard, regenerateStoryboardText, addStoryboardGroup, moveStoryboardGroup, insertPanel,
+    savingPanels, deletingPanelIds, saveStateByPanel, hasUnsavedByPanel, submittingStoryboardTextIds, addingStoryboardGroup, movingClipId, aiInsertingAfterPanelId, manualInsertingAfterPanelId, insertingAfterPanelId,
+    savePanelWithData, addPanel, deletePanel, deleteStoryboard, regenerateStoryboardText, addStoryboardGroup, moveStoryboardGroup, insertPanelWithAI, insertPanelManually,
     submittingVariantPanelId, generatePanelVariant,
     submittingStoryboardIds, submittingPanelImageIds, selectingCandidateIds,
     editingPanel, setEditingPanel, modifyingPanels, isDownloadingImages, previewImage, setPreviewImage,
     regeneratePanelImage, regenerateAllPanelsIndividually, selectPanelCandidate, selectPanelCandidateIndex,
-    cancelPanelCandidate, getPanelCandidates, modifyPanelImage, downloadAllImages, clearStoryboardError,
+    cancelPanelCandidate, getPanelCandidates, modifyPanelImage, uploadPanelImage, downloadAllImages, clearStoryboardError,
     assetPickerPanel, setAssetPickerPanel, aiDataPanel, setAIDataPanel, isEpisodeBatchSubmitting,
     getDefaultAssetsForClip, handleEditSubmit, handlePanelUpdate, handleAddCharacter, handleSetLocation, handleRemoveCharacter, handleRemoveLocation,
     retrySave,

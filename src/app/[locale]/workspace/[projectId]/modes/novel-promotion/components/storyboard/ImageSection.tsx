@@ -28,6 +28,7 @@ interface ImageSectionProps {
   candidateData: PanelCandidateData | null
   previousImageUrl?: string | null
   onRegeneratePanelImage: (panelId: string, count?: number, force?: boolean) => void
+  onUploadPanelImage: (panelId: string, file: File) => Promise<void>
   onOpenEditModal: () => void
   onOpenAIDataModal: () => void
   onSelectCandidateIndex: (panelId: string, index: number) => void
@@ -51,6 +52,7 @@ export default function ImageSection({
   candidateData,
   previousImageUrl,
   onRegeneratePanelImage,
+  onUploadPanelImage,
   onOpenEditModal,
   onOpenAIDataModal,
   onSelectCandidateIndex,
@@ -129,6 +131,16 @@ export default function ImageSection({
       >
         {t('panel.generateImage')}
       </GlassButton>
+      <GlassButton
+        variant="ghost"
+        size="sm"
+        onClick={() => {
+          const input = document.getElementById(`panel-upload-${panelId}`) as HTMLInputElement | null
+          input?.click()
+        }}
+      >
+        {t('common.upload')}
+      </GlassButton>
     </div>
   )
 
@@ -189,6 +201,7 @@ export default function ImageSection({
           isSubmittingPanelImageTask={isSubmittingPanelImageTask}
           isModifying={isModifying}
           onRegeneratePanelImage={onRegeneratePanelImage}
+          onUploadPanelImage={onUploadPanelImage}
           onOpenEditModal={onOpenEditModal}
           onOpenAIDataModal={onOpenAIDataModal}
           onUndo={onUndo}

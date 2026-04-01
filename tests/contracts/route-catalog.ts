@@ -119,6 +119,8 @@ const ROUTE_FILES = [
   'src/app/api/novel-promotion/[projectId]/update-location/route.ts',
   'src/app/api/novel-promotion/[projectId]/update-prompt/route.ts',
   'src/app/api/novel-promotion/[projectId]/upload-asset-image/route.ts',
+  'src/app/api/novel-promotion/[projectId]/upload-panel-image/route.ts',
+  'src/app/api/novel-promotion/[projectId]/upload-panel-video/route.ts',
   'src/app/api/novel-promotion/[projectId]/video-proxy/route.ts',
   'src/app/api/novel-promotion/[projectId]/video-urls/route.ts',
   'src/app/api/novel-promotion/[projectId]/voice-analyze/route.ts',

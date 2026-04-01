@@ -119,12 +119,23 @@ services:
       BILLING_MODE: "OFF"
       # 流式
       LLM_STREAM_EPHEMERAL_ENABLED: "true"
+      # Google Vertex AI（Veo 需要 OAuth2 / service account，不能只用 API Key）
+      GOOGLE_VERTEX_PROJECT: "gen-lang-client-0270432151"
+      GOOGLE_VERTEX_LOCATION: "global"
+      GOOGLE_APPLICATION_CREDENTIALS: "/app/google-credentials.json"
+      # 容器内访问宿主机 flow2api 服务
+      FLOW2API_INTERNAL_BASE_URL: "http://host.docker.internal:38000/v1"
+      # 容器内访问宿主机 web-gemini 服务
+      WEB_GEMINI_INTERNAL_BASE_URL: "http://host.docker.internal:4000/v1"
     ports:
       - "13000:3000"
       - "13010:3010"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     volumes:
       - ./data:/app/data
       - ./docker-logs:/app/logs
+      - ./google-credentials.json:/app/google-credentials.json:ro
     depends_on:
       mysql:
         condition: service_healthy
@@ -149,7 +160,89 @@ services:
         npm run start
       "
 
+  # ==================== App Dev (hot reload, no rebuild on every code change) ====================
+  app-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: deps
+    image: waoowaoo:dev
+    container_name: waoowaoo-app-dev
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: "mysql://root:waoowaoo123@mysql:3306/waoowaoo"
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+      REDIS_USERNAME: ""
+      REDIS_PASSWORD: ""
+      REDIS_TLS: ""
+      STORAGE_TYPE: minio
+      MINIO_ENDPOINT: "http://minio:9000"
+      MINIO_REGION: "us-east-1"
+      MINIO_BUCKET: "waoowaoo"
+      MINIO_ACCESS_KEY: "minioadmin"
+      MINIO_SECRET_KEY: "minioadmin"
+      MINIO_FORCE_PATH_STYLE: "true"
+      APP_INTERNAL_BASE_URL: "http://127.0.0.1:3000"
+      NEXTAUTH_URL: "http://localhost:13001"
+      NEXTAUTH_SECRET: "waoowaoo-default-secret-2026"
+      CRON_SECRET: "waoowaoo-docker-cron-secret"
+      INTERNAL_TASK_TOKEN: "waoowaoo-docker-task-token"
+      API_ENCRYPTION_KEY: "waoowaoo-opensource-fixed-key-2026"
+      WATCHDOG_INTERVAL_MS: "30000"
+      TASK_HEARTBEAT_TIMEOUT_MS: "90000"
+      QUEUE_CONCURRENCY_IMAGE: "50"
+      QUEUE_CONCURRENCY_VIDEO: "50"
+      QUEUE_CONCURRENCY_VOICE: "20"
+      QUEUE_CONCURRENCY_TEXT: "50"
+      BULL_BOARD_HOST: "0.0.0.0"
+      BULL_BOARD_PORT: "3010"
+      BULL_BOARD_BASE_PATH: "/admin/queues"
+      BULL_BOARD_USER: ""
+      BULL_BOARD_PASSWORD: ""
+      LOG_UNIFIED_ENABLED: "true"
+      LOG_LEVEL: "INFO"
+      LOG_FORMAT: "json"
+      LOG_DEBUG_ENABLED: "false"
+      LOG_AUDIT_ENABLED: "true"
+      LOG_SERVICE: "waoowaoo"
+      LOG_REDACT_KEYS: "password,token,apiKey,apikey,authorization,cookie,secret,access_token,refresh_token"
+      BILLING_MODE: "OFF"
+      LLM_STREAM_EPHEMERAL_ENABLED: "true"
+      GOOGLE_VERTEX_PROJECT: "gen-lang-client-0270432151"
+      GOOGLE_VERTEX_LOCATION: "global"
+      GOOGLE_APPLICATION_CREDENTIALS: "/app/google-credentials.json"
+      FLOW2API_INTERNAL_BASE_URL: "http://host.docker.internal:38000/v1"
+      WEB_GEMINI_INTERNAL_BASE_URL: "http://host.docker.internal:4000/v1"
+      CHOKIDAR_USEPOLLING: "true"
+      WATCHPACK_POLLING: "true"
+    ports:
+      - "13001:3000"
+      - "13011:3010"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - .:/app
+      - app_dev_node_modules:/app/node_modules
+      - ./data:/app/data
+      - ./docker-logs:/app/logs
+      - ./google-credentials.json:/app/google-credentials.json:ro
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    command: >
+      sh -c "
+        touch /app/.env &&
+        npm run storage:init &&
+        npm run dev
+      "
+
 volumes:
   mysql_data:
   redis_data:
   minio_data:
+  app_dev_node_modules:

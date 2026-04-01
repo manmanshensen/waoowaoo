@@ -8,6 +8,11 @@ describe('model-gateway router', () => {
     expect(resolveModelGatewayRoute('openai-compatible:oa-1')).toBe('openai-compat')
   })
 
+  it('routes web-gemini provider to openai-compat', () => {
+    expect(isCompatibleProvider('web-gemini')).toBe(true)
+    expect(resolveModelGatewayRoute('web-gemini')).toBe('openai-compat')
+  })
+
   it('keeps gemini-compatible providers on official route', () => {
     expect(isCompatibleProvider('gemini-compatible')).toBe(false)
     expect(isCompatibleProvider('gemini-compatible:gm-1')).toBe(false)

@@ -4,6 +4,7 @@ import { withPrismaRetry } from '@/lib/prisma-retry'
 import { rollbackTaskBilling } from '@/lib/billing'
 import { locales } from '@/i18n/routing'
 import { TASK_STATUS, type CreateTaskInput, type TaskBillingInfo, type TaskStatus } from './types'
+import { removeTaskJob } from './queues'
 
 const ACTIVE_STATUSES: TaskStatus[] = [TASK_STATUS.QUEUED, TASK_STATUS.PROCESSING]
 const taskModel = prisma.task
@@ -615,4 +616,55 @@ export async function dismissFailedTasks(taskIds: string[], userId: string) {
     },
   })
   return result.count
+}
+
+export async function clearSupersededTasksByDedupeKey(params: {
+  dedupeKey: string | null | undefined
+  userId: string
+  reason?: string
+}) {
+  const dedupeKey = typeof params.dedupeKey === 'string' ? params.dedupeKey.trim() : ''
+  if (!dedupeKey) {
+    return { clearedTaskIds: [] as string[] }
+  }
+
+  const tasks = await taskModel.findMany({
+    where: {
+      userId: params.userId,
+      dedupeKey,
+      status: {
+        in: [TASK_STATUS.QUEUED, TASK_STATUS.PROCESSING, TASK_STATUS.FAILED],
+      },
+    },
+    orderBy: { createdAt: 'desc' },
+    select: {
+      id: true,
+      status: true,
+    },
+  })
+
+  if (tasks.length === 0) {
+    return { clearedTaskIds: [] as string[] }
+  }
+
+  const clearedTaskIds: string[] = []
+  for (const task of tasks) {
+    await removeTaskJob(task.id).catch(() => false)
+
+    if (isActiveStatus(task.status)) {
+      await cancelTask(task.id, params.reason || 'Superseded by newer task submission')
+    } else if (task.status === TASK_STATUS.FAILED) {
+      await taskModel.update({
+        where: { id: task.id },
+        data: {
+          status: TASK_STATUS.DISMISSED,
+          dedupeKey: null,
+        },
+      })
+    }
+
+    clearedTaskIds.push(task.id)
+  }
+
+  return { clearedTaskIds }
 }

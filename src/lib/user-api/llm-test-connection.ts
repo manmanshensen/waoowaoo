@@ -1,5 +1,6 @@
 import OpenAI from 'openai'
 import { ApiError } from '@/lib/api-errors'
+import { resolveFlow2ApiRuntimeBaseUrl, resolveWebGeminiRuntimeBaseUrl } from '@/lib/flow2api-config'
 
 type SupportedProvider =
   | 'openrouter'
@@ -7,9 +8,12 @@ type SupportedProvider =
   | 'anthropic'
   | 'openai'
   | 'bailian'
+  | 'grsai'
   | 'siliconflow'
   | 'openai-compatible'
   | 'gemini-compatible'
+  | 'flow2api'
+  | 'web-gemini'
   | 'custom'
 
 type TestConnectionPayload = {
@@ -27,6 +31,20 @@ export type LlmConnectionTestResult = {
   answer?: string
 }
 
+function readPositiveIntegerEnv(name: string): number | undefined {
+  const raw = process.env[name]
+  if (typeof raw !== 'string') return undefined
+  const parsed = Number.parseInt(raw.trim(), 10)
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : undefined
+}
+
+function getProviderConnectionTimeoutMs(provider: SupportedProvider): number {
+  if (provider === 'web-gemini') {
+    return readPositiveIntegerEnv('WEB_GEMINI_TEST_TIMEOUT_MS') ?? 90_000
+  }
+  return 30_000
+}
+
 function normalizeProvider(payload: TestConnectionPayload): SupportedProvider {
   const provider = typeof payload.provider === 'string' ? payload.provider.trim().toLowerCase() : ''
   if (!provider) {
@@ -41,7 +59,10 @@ function normalizeProvider(payload: TestConnectionPayload): SupportedProvider {
     case 'openai':
     case 'openai-compatible':
     case 'gemini-compatible':
+    case 'flow2api':
+    case 'web-gemini':
     case 'bailian':
+    case 'grsai':
     case 'siliconflow':
     case 'custom':
       return provider
@@ -82,11 +103,12 @@ async function testOpenAICompatibleConnection(params: {
   baseURL?: string
   model?: string
   defaultHeaders?: Record<string, string>
+  timeoutMs?: number
 }): Promise<Pick<LlmConnectionTestResult, 'model' | 'answer'>> {
   const client = new OpenAI({
     apiKey: params.apiKey,
     baseURL: params.baseURL,
-    timeout: 30000,
+    timeout: params.timeoutMs ?? 30_000,
     defaultHeaders: params.defaultHeaders,
   })
 
@@ -168,6 +190,7 @@ export async function testLlmConnection(payload: TestConnectionPayload): Promise
         apiKey,
         baseURL: 'https://openrouter.ai/api/v1',
         model: requestedModel || undefined,
+        timeoutMs: getProviderConnectionTimeoutMs(provider),
       })
       return { provider, message: 'openrouter 连接成功', ...tested }
     }
@@ -180,6 +203,7 @@ export async function testLlmConnection(payload: TestConnectionPayload): Promise
         baseURL: 'https://api.anthropic.com/v1',
         model: requestedModel || 'claude-3-haiku-20240307',
         defaultHeaders: { 'anthropic-version': '2023-06-01' },
+        timeoutMs: getProviderConnectionTimeoutMs(provider),
       })
       return { provider, message: 'anthropic 连接成功', ...tested }
     }
@@ -187,12 +211,22 @@ export async function testLlmConnection(payload: TestConnectionPayload): Promise
       const tested = await testOpenAICompatibleConnection({
         apiKey,
         model: requestedModel || undefined,
+        timeoutMs: getProviderConnectionTimeoutMs(provider),
       })
       return { provider, message: 'openai 连接成功', ...tested }
     }
     case 'bailian': {
       const tested = await testBailianProbe(apiKey)
       return { provider, message: 'bailian 连接成功', ...tested }
+    }
+    case 'grsai': {
+      const tested = await testOpenAICompatibleConnection({
+        apiKey,
+        baseURL: 'https://grsai.dakka.com.cn/v1',
+        model: requestedModel || 'gemini-3.1-pro',
+        timeoutMs: getProviderConnectionTimeoutMs(provider),
+      })
+      return { provider, message: 'grsai 连接成功', ...tested }
     }
     case 'siliconflow': {
       const tested = await testSiliconFlowProbe(apiKey)
@@ -203,6 +237,7 @@ export async function testLlmConnection(payload: TestConnectionPayload): Promise
         apiKey,
         baseURL: requireBaseUrl(payload),
         model: requestedModel || undefined,
+        timeoutMs: getProviderConnectionTimeoutMs(provider),
       })
       return { provider, message: 'openai-compatible 连接成功', ...tested }
     }
@@ -211,14 +246,34 @@ export async function testLlmConnection(payload: TestConnectionPayload): Promise
         apiKey,
         baseURL: requireBaseUrl(payload),
         model: requestedModel || undefined,
+        timeoutMs: getProviderConnectionTimeoutMs(provider),
       })
       return { provider, message: 'gemini-compatible 连接成功', ...tested }
+    }
+    case 'flow2api': {
+      const tested = await testOpenAICompatibleConnection({
+        apiKey,
+        baseURL: resolveFlow2ApiRuntimeBaseUrl('flow2api', requireBaseUrl(payload)),
+        model: requestedModel || undefined,
+        timeoutMs: getProviderConnectionTimeoutMs(provider),
+      })
+      return { provider, message: 'flow2api 连接成功', ...tested }
+    }
+    case 'web-gemini': {
+      const tested = await testOpenAICompatibleConnection({
+        apiKey,
+        baseURL: resolveWebGeminiRuntimeBaseUrl('web-gemini', requireBaseUrl(payload)),
+        model: requestedModel || undefined,
+        timeoutMs: getProviderConnectionTimeoutMs(provider),
+      })
+      return { provider, message: 'web-gemini 连接成功', ...tested }
     }
     case 'custom': {
       const tested = await testOpenAICompatibleConnection({
         apiKey,
         baseURL: requireBaseUrl(payload),
         model: requestedModel || undefined,
+        timeoutMs: getProviderConnectionTimeoutMs(provider),
       })
       return { provider, message: 'custom 连接成功', ...tested }
     }

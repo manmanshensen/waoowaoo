@@ -76,6 +76,32 @@ git pull
 docker compose down && docker compose up -d --build
 ```
 
+### 方式二点五：Docker 热更新开发（推荐日常改代码）
+
+如果你希望继续在 Docker 里开发，但不想每次改代码都重新构建整个 `app` 镜像，可以使用 `app-dev`：
+
+```bash
+git clone https://github.com/saturndec/waoowaoo.git
+cd waoowaoo
+
+# 先启动基础设施
+docker compose up -d mysql redis minio
+
+# 再启动热更新开发服务
+docker compose up app-dev
+```
+
+访问地址：
+```text
+应用：http://localhost:13001
+队列面板：http://localhost:13011/admin/queues
+```
+
+说明：
+- `app-dev` 会挂载当前源码目录，保存文件后自动热更新
+- 日常联调优先使用 `app-dev`
+- 只有在验证生产构建或准备部署时，才使用 `docker compose up -d --build app`
+
 ### 方式三：本地开发模式（开发者）
 
 ```bash

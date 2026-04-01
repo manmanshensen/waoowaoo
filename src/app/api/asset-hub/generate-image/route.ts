@@ -15,6 +15,7 @@ import { withTaskUiPayload } from '@/lib/task/ui-payload'
 import { PRIMARY_APPEARANCE_INDEX, isArtStyleValue } from '@/lib/constants'
 import { normalizeImageGenerationCount } from '@/lib/image-generation/count'
 import { ensureGlobalLocationImageSlots } from '@/lib/image-generation/location-slots'
+import { clearSupersededTasksByDedupeKey } from '@/lib/task/service'
 
 function toNumber(value: unknown) {
   const parsed = Number(value)
@@ -161,6 +162,12 @@ export const POST = apiHandler(async (request: NextRequest) => {
     const message = err instanceof Error ? err.message : 'Image model capability not configured'
     throw new ApiError('INVALID_PARAMS', { code: 'IMAGE_MODEL_CAPABILITY_NOT_CONFIGURED', message })
   }
+  const dedupeKey = `${TASK_TYPE.ASSET_HUB_IMAGE}:${targetType}:${id}:${type === 'character' ? resolvedAppearanceIndex : 'na'}:${toNumber(body.imageIndex) === null ? count : `single:${toNumber(body.imageIndex)}`}`
+  await clearSupersededTasksByDedupeKey({
+    dedupeKey,
+    userId: session.user.id,
+    reason: 'Superseded by manual regenerate request',
+  })
   const result = await submitTask({
     userId: session.user.id,
     locale,
@@ -170,7 +177,8 @@ export const POST = apiHandler(async (request: NextRequest) => {
     targetType,
     targetId: id,
     payload: withTaskUiPayload(billingPayload, { hasOutputAtStart }),
-    dedupeKey: `${TASK_TYPE.ASSET_HUB_IMAGE}:${targetType}:${id}:${type === 'character' ? resolvedAppearanceIndex : 'na'}:${toNumber(body.imageIndex) === null ? count : `single:${toNumber(body.imageIndex)}`}`,
+    dedupeKey,
+    maxAttempts: 1,
     billingInfo: buildDefaultTaskBillingInfo(TASK_TYPE.ASSET_HUB_IMAGE, billingPayload)
   })
 

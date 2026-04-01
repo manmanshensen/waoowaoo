@@ -148,7 +148,8 @@
         "generateMultiple": "生成多张候选",
         "generateCount": "生成 {count} 张",
         "generateCountSuffix": "张",
-        "undoShort": "返回"
+        "undoShort": "返回",
+        "upload": "上传分镜图"
     },
     "candidate": {
         "title": "选择候选图",
@@ -248,6 +249,7 @@
         "regenerateGroupFailed": "重新生成分镜失败: {error}",
         "addGroupFailed": "添加分镜组失败: {error}",
         "moveGroupFailed": "移动分镜组失败: {error}",
+        "uploadPanelFailed": "上传分镜失败: {error}",
         "batchGenerateCompleted": "批量生成完成:\n成功: {succeeded}\n失败: {failed}\n\n部分错误: {errors}",
         "batchGenerateFailed": "批量生成失败: {error}"
     },

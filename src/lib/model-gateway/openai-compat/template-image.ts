@@ -41,16 +41,30 @@ function readTemplateOutputUrls(value: unknown): string[] {
   const urls: string[] = []
   for (const item of value) {
     if (typeof item === 'string' && item.trim()) {
-      urls.push(item.trim())
+      const parsed = parseTemplateImageUrl(item)
+      if (parsed) urls.push(parsed)
       continue
     }
     if (!item || typeof item !== 'object' || Array.isArray(item)) continue
     const url = (item as { url?: unknown }).url
     if (typeof url === 'string' && url.trim()) {
-      urls.push(url.trim())
+      const parsed = parseTemplateImageUrl(url)
+      if (parsed) urls.push(parsed)
     }
   }
   return urls
+}
+
+function parseTemplateImageUrl(value: string): string | null {
+  const trimmed = value.trim()
+  if (!trimmed) return null
+  if (/^https?:\/\//i.test(trimmed)) return trimmed
+
+  const markdownMatch = trimmed.match(/^!\[[^\]]*\]\(([^)\s]+(?:\s+\"[^\"]*\")?)\)$/)
+  if (!markdownMatch?.[1]) return null
+
+  const url = markdownMatch[1].trim().replace(/\s+\"[^\"]*\"$/, '')
+  return url || null
 }
 
 export async function generateImageViaOpenAICompatTemplate(
@@ -113,6 +127,13 @@ export async function generateImageViaOpenAICompatTemplate(
 
     const outputUrl = readJsonPath(payload, request.template.response.outputUrlPath)
     if (typeof outputUrl === 'string' && outputUrl.trim().length > 0) {
+      const parsedOutputUrl = parseTemplateImageUrl(outputUrl)
+      if (parsedOutputUrl) {
+        return {
+          success: true,
+          imageUrl: parsedOutputUrl,
+        }
+      }
       return {
         success: true,
         imageUrl: outputUrl.trim(),

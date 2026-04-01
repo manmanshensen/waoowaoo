@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import TaskStatusOverlay from '@/components/task/TaskStatusOverlay'
 import { MediaImageWithLoading } from '@/components/media/MediaImageWithLoading'
 
@@ -25,6 +25,7 @@ export default function VideoPanelCardHeader({ runtime }: VideoPanelCardHeaderPr
 
   const [errorDismissed, setErrorDismissed] = useState(false)
   const [showTooltip, setShowTooltip] = useState(false)
+  const uploadInputRef = useRef<HTMLInputElement | null>(null)
 
   useEffect(() => {
     setErrorDismissed(false)
@@ -32,9 +33,30 @@ export default function VideoPanelCardHeader({ runtime }: VideoPanelCardHeaderPr
 
   const hasVisibleBaseVideo = !!media.baseVideoUrl
   const showFirstLastFrameSwitch = layout.hasNext
+  const hasBlockingErrorOverlay = !!taskStatus.panelErrorDisplay
+    && !taskStatus.isVideoTaskRunning
+    && !taskStatus.isLipSyncTaskRunning
+    && !errorDismissed
 
   return (
     <div className="bg-[var(--glass-bg-muted)] flex items-center justify-center relative" style={{ aspectRatio: player.cssAspectRatio }}>
+      <input
+        ref={uploadInputRef}
+        type="file"
+        accept="video/mp4,video/webm,video/quicktime"
+        className="hidden"
+        onChange={async (event) => {
+          const file = event.target.files?.[0]
+          event.target.value = ''
+          if (!file || !panel.panelId || !actions.onUploadVideo) return
+          try {
+            await actions.onUploadVideo(panel.panelId, file)
+          } catch (error) {
+            const message = error instanceof Error ? error.message : t('stage.unknownError')
+            alert(t('stage.error.uploadVideoFailed', { error: message }))
+          }
+        }}
+      />
       {hasVisibleBaseVideo && player.isPlaying ? (
         <video
           ref={player.videoRef}
@@ -113,26 +135,44 @@ export default function VideoPanelCardHeader({ runtime }: VideoPanelCardHeaderPr
       )}
 
       {/* 口型同步切换 */}
-      {panel.lipSyncVideoUrl && hasVisibleBaseVideo ? (
-        <div
-          className="absolute top-2 right-2 flex items-center bg-[var(--glass-overlay)] rounded-full p-0.5 cursor-pointer"
-          onClick={(event) => {
-            event.stopPropagation()
-            media.onToggleLipSyncVideo(panelKey, !media.showLipSyncVideo)
-            player.setIsPlaying(false)
-          }}
-        >
-          <div className={`px-2 py-0.5 rounded-full text-[10px] font-medium transition-all ${!media.showLipSyncVideo ? 'bg-[var(--glass-tone-success-fg)] text-white' : 'text-[var(--glass-text-tertiary)] hover:text-white'}`}>
-            {t('panelCard.original')}
+      {!hasBlockingErrorOverlay && (
+        <div className="absolute top-2 right-2 flex items-center gap-2 z-20">
+        {actions.onUploadVideo && panel.panelId ? (
+          <button
+            onClick={(event) => {
+              event.stopPropagation()
+              uploadInputRef.current?.click()
+            }}
+            disabled={taskStatus.isVideoTaskRunning || taskStatus.isLipSyncTaskRunning}
+            className="bg-[var(--glass-overlay)] hover:bg-[var(--glass-overlay-strong)] text-white p-2 rounded-full transition-all disabled:cursor-not-allowed disabled:opacity-50"
+            title={t('panelCard.uploadVideo')}
+          >
+            <AppIcon name="upload" className="w-4 h-4" />
+          </button>
+        ) : null}
+
+        {panel.lipSyncVideoUrl && hasVisibleBaseVideo ? (
+          <div
+            className="flex items-center bg-[var(--glass-overlay)] rounded-full p-0.5 cursor-pointer"
+            onClick={(event) => {
+              event.stopPropagation()
+              media.onToggleLipSyncVideo(panelKey, !media.showLipSyncVideo)
+              player.setIsPlaying(false)
+            }}
+          >
+            <div className={`px-2 py-0.5 rounded-full text-[10px] font-medium transition-all ${!media.showLipSyncVideo ? 'bg-[var(--glass-tone-success-fg)] text-white' : 'text-[var(--glass-text-tertiary)] hover:text-white'}`}>
+              {t('panelCard.original')}
+            </div>
+            <div className={`px-2 py-0.5 rounded-full text-[10px] font-medium transition-all ${media.showLipSyncVideo ? 'bg-[var(--glass-accent-from)] text-white' : 'text-[var(--glass-text-tertiary)] hover:text-white'}`}>
+              {t('panelCard.synced')}
+            </div>
           </div>
-          <div className={`px-2 py-0.5 rounded-full text-[10px] font-medium transition-all ${media.showLipSyncVideo ? 'bg-[var(--glass-accent-from)] text-white' : 'text-[var(--glass-text-tertiary)] hover:text-white'}`}>
-            {t('panelCard.synced')}
-          </div>
+        ) : null}
         </div>
-      ) : null}
+      )}
 
       {/* 重新生成按钮 */}
-      {!layout.isLinked && !layout.isLastFrame && (hasVisibleBaseVideo || taskStatus.isVideoTaskRunning) && (
+      {!hasBlockingErrorOverlay && !layout.isLinked && !layout.isLastFrame && (hasVisibleBaseVideo || taskStatus.isVideoTaskRunning) && (
         <button
           onClick={() =>
             actions.onGenerateVideo(
@@ -160,15 +200,15 @@ export default function VideoPanelCardHeader({ runtime }: VideoPanelCardHeaderPr
       )}
 
       {/* 错误提示 */}
-      {taskStatus.panelErrorDisplay && !taskStatus.isVideoTaskRunning && !taskStatus.isLipSyncTaskRunning && !errorDismissed && (
-        <div className="absolute inset-0 bg-[var(--glass-tone-danger-bg)] flex flex-col items-center justify-center z-10 p-4">
+      {hasBlockingErrorOverlay && (
+        <div className="absolute inset-0 bg-[var(--glass-tone-danger-bg)] flex flex-col items-center justify-center z-30 p-4">
           <button
             onClick={(e) => { e.stopPropagation(); setErrorDismissed(true) }}
             className="absolute top-2 right-2 w-5 h-5 flex items-center justify-center rounded-full bg-black/30 hover:bg-black/50 text-white text-xs transition-colors"
           >
             <AppIcon name="close" className="w-3 h-3" />
           </button>
-          <span className="text-white text-xs text-center break-all">{taskStatus.panelErrorDisplay.message}</span>
+          <span className="text-white text-xs text-center break-all">{taskStatus.panelErrorDisplay?.message}</span>
         </div>
       )}
     </div>

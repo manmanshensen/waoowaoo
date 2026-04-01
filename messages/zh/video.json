@@ -35,6 +35,9 @@
     "regenerateLipSync": "重新生成口型同步",
     "editPrompt": "编辑提示词",
     "clickToEditPrompt": "点击编辑提示词...",
+    "copyVideoPrompt": "复制视频提示词",
+    "copiedVideoPrompt": "已复制视频提示词",
+    "uploadVideo": "上传视频",
     "shot": "镜头 {number}",
     "unknownShotType": "未知景别",
     "correspondingText": "对应原文",
@@ -109,7 +112,10 @@
     "error": {
       "saveFailed": "保存视频提示词失败",
       "lipSyncFailed": "口型同步失败",
-      "fetchVideosFailed": "获取视频列表失败"
+      "fetchVideosFailed": "获取视频列表失败",
+      "copyVideoPromptEmpty": "当前没有可复制的视频提示词",
+      "copyVideoPromptFailed": "复制视频提示词失败: {error}",
+      "uploadVideoFailed": "上传视频失败: {error}"
     },
     "downloadFailed": "下载失败",
     "unknownError": "未知错误"

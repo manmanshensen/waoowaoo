@@ -112,6 +112,11 @@ export const PRESET_MODELS: PresetModel[] = [
     // 阿里云百炼文本模型
     { modelId: 'qwen3.5-plus', name: 'Qwen 3.5 Plus', type: 'llm', provider: 'bailian' },
     { modelId: 'qwen3.5-flash', name: 'Qwen 3.5 Flash', type: 'llm', provider: 'bailian' },
+    { modelId: 'gemini-3.1-pro', name: 'Gemini 3.1 Pro', type: 'llm', provider: 'grsai' },
+    { modelId: 'gemini-3-pro', name: 'Gemini 3 Pro', type: 'llm', provider: 'grsai' },
+    { modelId: 'gemini-2.5-pro', name: 'Gemini 2.5 Pro', type: 'llm', provider: 'grsai' },
+    { modelId: 'nano-banana-fast', name: 'Nano Banana Fast', type: 'llm', provider: 'grsai' },
+    { modelId: 'nano-banana', name: 'Nano Banana', type: 'llm', provider: 'grsai' },
     // MiniMax 官方文本模型
     { modelId: 'MiniMax-M2.5', name: 'MiniMax M2.5', type: 'llm', provider: 'minimax' },
     { modelId: 'MiniMax-M2.5-highspeed', name: 'MiniMax M2.5 Highspeed', type: 'llm', provider: 'minimax' },
@@ -128,10 +133,82 @@ export const PRESET_MODELS: PresetModel[] = [
     { modelId: 'gemini-3-pro-image-preview', name: 'Banana Pro', type: 'image', provider: 'google' },
     { modelId: 'gemini-3.1-flash-image-preview', name: 'Nano Banana 2', type: 'image', provider: 'google' },
     { modelId: 'gemini-3-pro-image-preview-batch', name: 'Banana Pro (Batch)', type: 'image', provider: 'google' },
+    { modelId: 'nano-banana-2', name: 'Nano Banana 2', type: 'image', provider: 'grsai' },
+    { modelId: 'nano-banana-2-cl', name: 'Nano Banana 2 CL', type: 'image', provider: 'grsai' },
+    { modelId: 'nano-banana-2-4k-cl', name: 'Nano Banana 2 4K CL', type: 'image', provider: 'grsai' },
+    { modelId: 'nano-banana-fast', name: 'Nano Banana Fast', type: 'image', provider: 'grsai' },
+    { modelId: 'nano-banana', name: 'Nano Banana', type: 'image', provider: 'grsai' },
+    { modelId: 'nano-banana-pro', name: 'Nano Banana Pro', type: 'image', provider: 'grsai' },
+    { modelId: 'nano-banana-pro-vt', name: 'Nano Banana Pro VT', type: 'image', provider: 'grsai' },
+    { modelId: 'nano-banana-pro-cl', name: 'Nano Banana Pro CL', type: 'image', provider: 'grsai' },
+    { modelId: 'nano-banana-pro-vip', name: 'Nano Banana Pro VIP', type: 'image', provider: 'grsai' },
+    { modelId: 'nano-banana-pro-4k-vip', name: 'Nano Banana Pro 4K VIP', type: 'image', provider: 'grsai' },
     { modelId: 'gemini-2.5-flash-image', name: 'Gemini 2.5 Flash Image', type: 'image', provider: 'google' },
     { modelId: 'imagen-4.0-generate-001', name: 'Imagen 4', type: 'image', provider: 'google' },
     { modelId: 'imagen-4.0-ultra-generate-001', name: 'Imagen 4 Ultra', type: 'image', provider: 'google' },
     { modelId: 'imagen-4.0-fast-generate-001', name: 'Imagen 4 Fast', type: 'image', provider: 'google' },
+    {
+        modelId: 'gemini-3.1-flash-image-landscape',
+        name: 'Gemini 3.1 Flash Image Landscape',
+        type: 'image',
+        provider: 'flow2api',
+        compatMediaTemplate: {
+            version: 1,
+            mediaType: 'image',
+            mode: 'sync',
+            create: {
+                method: 'POST',
+                path: '/chat/completions',
+                contentType: 'application/json',
+                bodyTemplate: {
+                    model: '{{model}}',
+                    messages: [
+                        {
+                            role: 'user',
+                            content: '{{prompt}}',
+                        },
+                    ],
+                    stream: false,
+                },
+            },
+            response: {
+                outputUrlPath: '$.choices[0].message.content',
+                errorPath: '$.error.message',
+            },
+        },
+    },
+    {
+        modelId: 'gemini-web-proxy',
+        name: 'Web Gemini Chat',
+        type: 'llm',
+        provider: 'web-gemini',
+        llmProtocol: 'chat-completions',
+    },
+    {
+        modelId: 'gemini-image-web-proxy',
+        name: 'Web Gemini Image',
+        type: 'image',
+        provider: 'web-gemini',
+        compatMediaTemplate: {
+            version: 1,
+            mediaType: 'image',
+            mode: 'sync',
+            create: {
+                method: 'POST',
+                path: '/images/generations',
+                contentType: 'application/json',
+                bodyTemplate: {
+                    model: '{{model}}',
+                    prompt: '{{prompt}}',
+                },
+            },
+            response: {
+                outputUrlPath: '$.data[0].url',
+                outputUrlsPath: '$.data',
+                errorPath: '$.error.message',
+            },
+        },
+    },
     // 视频模型
     { modelId: 'doubao-seedance-1-0-pro-fast-251015', name: 'Seedance 1.0 Pro Fast', type: 'video', provider: 'ark' },
     { modelId: 'doubao-seedance-1-0-lite-i2v-250428', name: 'Seedance 1.0 Lite', type: 'video', provider: 'ark' },
@@ -201,6 +278,9 @@ export const PRESET_PROVIDERS: Omit<Provider, 'apiKey' | 'hasApiKey'>[] = [
     { id: 'ark', name: 'Volcengine Ark' },
     { id: 'google', name: 'Google AI Studio' },
     { id: 'bailian', name: 'Alibaba Bailian' },
+    { id: 'grsai', name: 'GRSAI', baseUrl: 'https://grsai.dakka.com.cn' },
+    { id: 'flow2api', name: 'Flow2API Local', baseUrl: 'http://localhost:38000/v1', gatewayRoute: 'openai-compat' },
+    { id: 'web-gemini', name: 'Web Gemini', baseUrl: 'http://127.0.0.1:4000/v1', gatewayRoute: 'openai-compat' },
     { id: 'openrouter', name: 'OpenRouter', baseUrl: 'https://openrouter.ai/api/v1' },
     { id: 'minimax', name: 'MiniMax Hailuo', baseUrl: 'https://api.minimaxi.com/v1' },
     { id: 'vidu', name: 'Vidu' },
@@ -212,7 +292,10 @@ const ZH_PROVIDER_NAME_MAP: Record<string, string> = {
     minimax: '海螺 MiniMax',
     vidu: '生数科技 Vidu',
     bailian: '阿里云百炼',
+    grsai: 'GRSAI',
     siliconflow: '硅基流动',
+    flow2api: '本地 Flow2API',
+    'web-gemini': '本地 Web Gemini',
 }
 
 function isZhLocale(locale?: string): boolean {
@@ -373,11 +456,28 @@ export const PROVIDER_TUTORIALS: ProviderTutorial[] = [
         ]
     },
     {
+        providerId: 'web-gemini',
+        steps: [
+            {
+                text: 'web_gemini_step1'
+            }
+        ]
+    },
+    {
         providerId: 'bailian',
         steps: [
             {
                 text: 'bailian_step1',
                 url: 'https://bailian.console.aliyun.com/cn-beijing/?tab=model#/api-key'
+            }
+        ]
+    },
+    {
+        providerId: 'grsai',
+        steps: [
+            {
+                text: 'grsai_step1',
+                url: 'https://grsai.dakka.com.cn'
             }
         ]
     },

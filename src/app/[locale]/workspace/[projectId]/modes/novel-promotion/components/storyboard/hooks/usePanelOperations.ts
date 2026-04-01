@@ -44,6 +44,8 @@ export function usePanelOperations({
     submittingStoryboardTextIds: groupActions.submittingStoryboardTextIds,
     addingStoryboardGroup: groupActions.addingStoryboardGroup,
     movingClipId: groupActions.movingClipId,
+    aiInsertingAfterPanelId: panelInsert.aiInsertingAfterPanelId,
+    manualInsertingAfterPanelId: panelInsert.manualInsertingAfterPanelId,
     insertingAfterPanelId: panelInsert.insertingAfterPanelId,
 
     savePanel: panelCrud.savePanel,
@@ -59,6 +61,7 @@ export function usePanelOperations({
     addCharacterToPanel: panelCrud.addCharacterToPanel,
     removeCharacterFromPanel: panelCrud.removeCharacterFromPanel,
     setPanelLocation: panelCrud.setPanelLocation,
-    insertPanel: panelInsert.insertPanel,
+    insertPanelWithAI: panelInsert.insertPanelWithAI,
+    insertPanelManually: panelInsert.insertPanelManually,
   }
 }

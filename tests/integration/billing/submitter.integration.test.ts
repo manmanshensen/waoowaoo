@@ -15,6 +15,8 @@ vi.mock('@/lib/task/publisher', () => ({
   publishTaskEvent: vi.fn(async () => ({})),
 }))
 
+const { addTaskJob } = await import('@/lib/task/queues')
+
 describe('billing/submitter integration', () => {
   beforeEach(async () => {
     await resetBillingState()
@@ -126,5 +128,32 @@ describe('billing/submitter integration', () => {
     expect(task?.status).toBe('failed')
     expect(task?.errorCode).toBe('INVALID_PARAMS')
     expect(task?.errorMessage).toContain('missing server-generated billingInfo')
+  })
+
+  it('passes maxAttempts through to queue job options', async () => {
+    process.env.BILLING_MODE = 'OFF'
+    const user = await createTestUser()
+
+    const result = await submitTask({
+      userId: user.id,
+      locale: 'en',
+      projectId: 'project-e',
+      type: TASK_TYPE.IMAGE_CHARACTER,
+      targetType: 'CharacterAppearance',
+      targetId: 'appearance-e',
+      payload: {},
+      maxAttempts: 1,
+    })
+
+    expect(result.success).toBe(true)
+    expect(addTaskJob).toHaveBeenCalledWith(
+      expect.objectContaining({
+        taskId: result.taskId,
+        type: TASK_TYPE.IMAGE_CHARACTER,
+      }),
+      expect.objectContaining({
+        attempts: 1,
+      }),
+    )
   })
 })

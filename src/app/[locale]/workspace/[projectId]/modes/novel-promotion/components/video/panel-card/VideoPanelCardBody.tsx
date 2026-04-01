@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import TaskStatusInline from '@/components/task/TaskStatusInline'
 import { resolveTaskPresentationState } from '@/lib/task/presentation'
 import { ModelCapabilityDropdown } from '@/components/ui/config-modals/ModelCapabilityDropdown'
@@ -50,6 +50,43 @@ export default function VideoPanelCardBody({ runtime }: VideoPanelCardBodyProps)
   const showsOutgoingLinkBadge = layout.isLinked && !!layout.nextPanel
   const showsPromptEditor = !layout.isLastFrame || layout.isLinked
   const showsFirstLastFrameActions = layout.isLinked && !!layout.nextPanel
+  const [copySucceeded, setCopySucceeded] = useState(false)
+  const promptToCopy = promptEditor.localPrompt.trim()
+
+  useEffect(() => {
+    if (!copySucceeded) return
+    const timeoutId = window.setTimeout(() => {
+      setCopySucceeded(false)
+    }, 1500)
+    return () => window.clearTimeout(timeoutId)
+  }, [copySucceeded])
+
+  const handleCopyPrompt = async () => {
+    if (!promptToCopy) {
+      alert(t('stage.error.copyVideoPromptEmpty'))
+      return
+    }
+
+    try {
+      if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+        await navigator.clipboard.writeText(promptToCopy)
+      } else {
+        const textarea = document.createElement('textarea')
+        textarea.value = promptToCopy
+        textarea.setAttribute('readonly', 'true')
+        textarea.style.position = 'fixed'
+        textarea.style.opacity = '0'
+        document.body.appendChild(textarea)
+        textarea.select()
+        document.execCommand('copy')
+        document.body.removeChild(textarea)
+      }
+      setCopySucceeded(true)
+    } catch (error) {
+      const message = error instanceof Error ? error.message : t('stage.unknownError')
+      alert(t('stage.error.copyVideoPromptFailed', { error: message }))
+    }
+  }
 
   return (
     <div className="p-4 space-y-2">
@@ -86,7 +123,20 @@ export default function VideoPanelCardBody({ runtime }: VideoPanelCardBodyProps)
         {showsPromptEditor && (
           <>
             <div className="flex items-center justify-between mb-1">
-              <span className="text-xs font-medium text-[var(--glass-text-tertiary)]">{t('promptModal.promptLabel')}</span>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-medium text-[var(--glass-text-tertiary)]">{t('promptModal.promptLabel')}</span>
+                {!promptEditor.isEditing && (
+                  <button
+                    onClick={() => void handleCopyPrompt()}
+                    className="inline-flex items-center gap-1 text-[var(--glass-text-tertiary)] hover:text-[var(--glass-tone-info-fg)] transition-colors p-0.5"
+                    title={copySucceeded ? t('panelCard.copiedVideoPrompt') : t('panelCard.copyVideoPrompt')}
+                    type="button"
+                  >
+                    <AppIcon name={copySucceeded ? 'clipboardCheck' : 'copy'} className="w-3.5 h-3.5" />
+                    <span className="text-[10px]">{copySucceeded ? t('panelCard.copiedVideoPrompt') : t('panelCard.copyVideoPrompt')}</span>
+                  </button>
+                )}
+              </div>
               {!promptEditor.isEditing && (
                 <button onClick={promptEditor.handleStartEdit} className="text-[var(--glass-text-tertiary)] hover:text-[var(--glass-tone-info-fg)] transition-colors p-0.5">
                   <AppIcon name="edit" className="w-3.5 h-3.5" />

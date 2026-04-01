@@ -54,6 +54,7 @@ export default function StoryboardGroup({
   onRemoveLocation,
   onRetryPanelSave,
   onRegeneratePanelImage,
+  onUploadPanelImage,
   onOpenEditModal,
   onOpenAIDataModal,
   getPanelCandidates,
@@ -62,7 +63,10 @@ export default function StoryboardGroup({
   onCancelPanelCandidate,
   formatClipTitle,
   movingClipId,
-  onInsertPanel,
+  aiInsertingAfterPanelId,
+  manualInsertingAfterPanelId,
+  onInsertPanelWithAI,
+  onInsertPanelManually,
   insertingAfterPanelId,
   projectId,
   episodeId,
@@ -78,14 +82,16 @@ export default function StoryboardGroup({
     variantModalPanel,
     handleOpenInsertModal,
     handleCloseInsertModal,
-    handleInsert,
+    handleAiInsert,
+    handleManualInsert,
     handleOpenVariantModal,
     handleCloseVariantModal,
     handleVariant,
   } = useStoryboardInsertVariantRuntime({
     storyboardId: storyboard.id,
     textPanels,
-    onInsertPanel,
+    onInsertPanelWithAI,
+    onInsertPanelManually,
     onPanelVariant,
   })
 
@@ -223,6 +229,7 @@ export default function StoryboardGroup({
         onRemoveLocation={onRemoveLocation}
         onRetryPanelSave={onRetryPanelSave}
         onRegeneratePanelImage={handleRegeneratePanelImage}
+        onUploadPanelImage={onUploadPanelImage}
         onOpenEditModal={onOpenEditModal}
         onOpenAIDataModal={onOpenAIDataModal}
         onSelectPanelCandidateIndex={onSelectPanelCandidateIndex}
@@ -243,9 +250,12 @@ export default function StoryboardGroup({
         insertAfterPanel={insertAfterPanel}
         nextPanelForInsert={nextPanelForInsert}
         insertModalOpen={insertModalOpen}
+        aiInsertingAfterPanelId={aiInsertingAfterPanelId}
+        manualInsertingAfterPanelId={manualInsertingAfterPanelId}
         insertingAfterPanelId={insertingAfterPanelId}
         onCloseInsertModal={handleCloseInsertModal}
-        onInsert={handleInsert}
+        onAiInsert={handleAiInsert}
+        onManualInsert={handleManualInsert}
         variantModalPanel={variantModalPanel}
         projectId={projectId}
         submittingVariantPanelId={submittingVariantPanelId}

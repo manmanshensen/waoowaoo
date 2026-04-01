@@ -19,9 +19,10 @@ import {
     resolveModelGatewayRoute,
 } from './model-gateway'
 import { generateBailianAudio, generateBailianImage, generateBailianVideo } from './providers/bailian'
+import { generateGrsaiImage } from './providers/grsai'
 import { generateSiliconFlowAudio, generateSiliconFlowImage, generateSiliconFlowVideo } from './providers/siliconflow'
 
-const OFFICIAL_ONLY_PROVIDER_KEYS = new Set(['bailian', 'siliconflow'])
+const OFFICIAL_ONLY_PROVIDER_KEYS = new Set(['bailian', 'siliconflow', 'grsai'])
 
 /**
  * 将 aspectRatio 映射为 OpenAI 兼容的 size
@@ -80,6 +81,19 @@ export async function generateImage(
     }
     if (providerKey === 'siliconflow') {
         return await generateSiliconFlowImage({
+            userId,
+            prompt,
+            referenceImages: options?.referenceImages,
+            options: {
+                ...(options || {}),
+                provider: selection.provider,
+                modelId: selection.modelId,
+                modelKey: selection.modelKey,
+            },
+        })
+    }
+    if (providerKey === 'grsai') {
+        return await generateGrsaiImage({
             userId,
             prompt,
             referenceImages: options?.referenceImages,

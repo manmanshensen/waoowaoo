@@ -19,9 +19,12 @@ interface StoryboardGroupDialogsProps {
   insertAfterPanel: PanelRuntimeSnapshot | null
   nextPanelForInsert: PanelRuntimeSnapshot | null
   insertModalOpen: boolean
+  aiInsertingAfterPanelId: string | null
+  manualInsertingAfterPanelId: string | null
   insertingAfterPanelId: string | null
   onCloseInsertModal: () => void
-  onInsert: (userInput: string) => Promise<void>
+  onAiInsert: (userInput: string) => Promise<void>
+  onManualInsert: (userInput: string) => Promise<void>
   variantModalPanel: VariantPanelRuntimeSnapshot | null
   projectId: string
   submittingVariantPanelId: string | null
@@ -33,9 +36,12 @@ export default function StoryboardGroupDialogs({
   insertAfterPanel,
   nextPanelForInsert,
   insertModalOpen,
+  aiInsertingAfterPanelId,
+  manualInsertingAfterPanelId,
   insertingAfterPanelId,
   onCloseInsertModal,
-  onInsert,
+  onAiInsert,
+  onManualInsert,
   variantModalPanel,
   projectId,
   submittingVariantPanelId,
@@ -50,7 +56,10 @@ export default function StoryboardGroupDialogs({
           onClose={onCloseInsertModal}
           prevPanel={insertAfterPanel}
           nextPanel={nextPanelForInsert}
-          onInsert={onInsert}
+          onAiInsert={onAiInsert}
+          onManualInsert={onManualInsert}
+          isAiInserting={aiInsertingAfterPanelId === insertAfterPanel.id}
+          isManualInserting={manualInsertingAfterPanelId === insertAfterPanel.id}
           isInserting={insertingAfterPanelId === insertAfterPanel.id}
         />
       )}

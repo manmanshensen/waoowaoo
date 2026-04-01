@@ -11,6 +11,7 @@ import {
   useRefreshStoryboards,
   useRegenerateProjectPanelImage,
   useModifyProjectStoryboardImage,
+  useUploadProjectPanelImage,
   useDownloadProjectImages,
 } from '@/lib/query/hooks'
 import {
@@ -49,6 +50,7 @@ export function useStoryboardImageGeneration({
   const refreshStoryboards = useRefreshStoryboards(episodeId ?? null)
   const regeneratePanelMutation = useRegenerateProjectPanelImage(projectId)
   const modifyPanelMutation = useModifyProjectStoryboardImage(projectId)
+  const uploadPanelImageMutation = useUploadProjectPanelImage(projectId)
   const downloadImagesMutation = useDownloadProjectImages(projectId)
   const clearStoryboardErrorMutation = useClearProjectStoryboardError(projectId)
 
@@ -145,6 +147,49 @@ export function useStoryboardImageGeneration({
     setIsDownloadingImages,
   })
 
+  const uploadPanelImage = useCallback(async (panelId: string, file: File) => {
+    setModifyingPanels((previous) => new Set(previous).add(panelId))
+    try {
+      const result = await uploadPanelImageMutation.mutateAsync({ panelId, file })
+      setLocalStoryboards((previousStoryboards) =>
+        previousStoryboards.map((storyboard) => {
+          const panels = getStoryboardPanels(storyboard)
+          let changed = false
+          const updatedPanels = panels.map((panel) => {
+            if (panel.id !== panelId) return panel
+            changed = true
+            return {
+              ...panel,
+              previousImageUrl: panel.imageUrl ?? null,
+              imageUrl: result.imageUrl ?? panel.imageUrl,
+              media: result.media ?? panel.media ?? null,
+              candidateImages: null,
+              imageTaskRunning: false,
+            }
+          })
+          return changed ? { ...storyboard, panels: updatedPanels } : storyboard
+        }),
+      )
+      if (onSilentRefresh) {
+        await onSilentRefresh()
+      }
+      refreshEpisode()
+      refreshStoryboards()
+    } finally {
+      setModifyingPanels((previous) => {
+        const next = new Set(previous)
+        next.delete(panelId)
+        return next
+      })
+    }
+  }, [
+    onSilentRefresh,
+    refreshEpisode,
+    refreshStoryboards,
+    setLocalStoryboards,
+    uploadPanelImageMutation,
+  ])
+
   const clearStoryboardError = useCallback(async (storyboardId: string) => {
     let snapshot: NovelPromotionStoryboard[] | null = null
     setLocalStoryboards((previousStoryboards) =>
@@ -196,6 +241,7 @@ export function useStoryboardImageGeneration({
     cancelPanelCandidate,
     getPanelCandidates,
     modifyPanelImage,
+    uploadPanelImage,
     downloadAllImages,
     clearStoryboardError,
   }

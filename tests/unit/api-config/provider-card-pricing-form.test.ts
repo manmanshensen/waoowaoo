@@ -14,6 +14,14 @@ describe('provider card pricing form behavior', () => {
     expect(getAddableModelTypesForProvider('openai-compatible:oa-1')).toEqual(['llm', 'image', 'video'])
   })
 
+  it('allows flow2api provider to add image/video', () => {
+    expect(getAddableModelTypesForProvider('flow2api')).toEqual(['image', 'video'])
+  })
+
+  it('allows web-gemini provider to add llm/image', () => {
+    expect(getAddableModelTypesForProvider('web-gemini')).toEqual(['llm', 'image'])
+  })
+
   it('shows llm/image/video tabs by default for openai-compatible even with only image models', () => {
     const visible = getVisibleModelTypesForProvider(
       'openai-compatible:oa-1',
@@ -33,6 +41,27 @@ describe('provider card pricing form behavior', () => {
     )
 
     expect(visible).toEqual(['llm', 'image', 'video'])
+  })
+
+  it('shows llm/image tabs by default for web-gemini even with only image models', () => {
+    const visible = getVisibleModelTypesForProvider(
+      'web-gemini',
+      {
+        image: [
+          {
+            modelId: 'gemini-image-web-proxy',
+            modelKey: 'web-gemini::gemini-image-web-proxy',
+            name: 'Image',
+            type: 'image',
+            provider: 'web-gemini',
+            price: 0,
+            enabled: true,
+          },
+        ],
+      },
+    )
+
+    expect(visible).toEqual(['llm', 'image'])
   })
 
   it('shows the openai-compatible video hint only for openai-compatible video add forms', () => {
@@ -139,6 +168,34 @@ describe('provider card pricing form behavior', () => {
       apiType: 'openai-compatible',
       apiKey: 'sk-test',
       baseUrl: 'https://api.openai-proxy.example/v1',
+    })
+  })
+
+  it('includes baseUrl for flow2api provider connection test payload', () => {
+    const payload = buildProviderConnectionPayload({
+      providerKey: 'flow2api',
+      apiKey: ' han1234 ',
+      baseUrl: ' http://localhost:38000/v1 ',
+    })
+
+    expect(payload).toEqual({
+      apiType: 'flow2api',
+      apiKey: 'han1234',
+      baseUrl: 'http://localhost:38000/v1',
+    })
+  })
+
+  it('includes baseUrl for web-gemini provider connection test payload', () => {
+    const payload = buildProviderConnectionPayload({
+      providerKey: 'web-gemini',
+      apiKey: ' test-key ',
+      baseUrl: ' http://127.0.0.1:4000/v1 ',
+    })
+
+    expect(payload).toEqual({
+      apiType: 'web-gemini',
+      apiKey: 'test-key',
+      baseUrl: 'http://127.0.0.1:4000/v1',
     })
   })
 

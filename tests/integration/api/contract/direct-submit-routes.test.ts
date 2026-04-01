@@ -73,6 +73,10 @@ const hasOutputMock = vi.hoisted(() => ({
 }))
 
 const prismaMock = vi.hoisted(() => ({
+  task: {
+    findMany: vi.fn(async () => []),
+    update: vi.fn(async () => ({})),
+  },
   userPreference: {
     findUnique: vi.fn(async () => ({ lipSyncModel: 'fal::lipsync-model' })),
   },

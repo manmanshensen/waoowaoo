@@ -231,6 +231,10 @@ export function arkResponsesStream(options: ArkResponsesOptions & { temperature?
         resolveResult = resolve
         rejectResult = reject
     })
+    // The consumer awaits `result()` only after the stream finishes iterating.
+    // Attach a noop catch immediately so early stream failures do not surface as
+    // unhandled rejections and crash the worker process before the caller handles them.
+    resultPromise.catch(() => {})
 
     const thinking = options.thinking
         ? {

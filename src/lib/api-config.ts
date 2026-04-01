@@ -14,6 +14,7 @@ import {
   parseModelKeyStrict,
   type UnifiedModelType,
 } from './model-config-contract'
+import { resolveFlow2ApiRuntimeBaseUrl, resolveWebGeminiRuntimeBaseUrl } from './flow2api-config'
 import type {
   OpenAICompatMediaTemplate,
   OpenAICompatMediaTemplateSource,
@@ -58,6 +59,8 @@ interface CustomProvider {
 }
 
 type LlmProtocolType = 'responses' | 'chat-completions'
+const OPENAI_COMPAT_PROVIDER_KEYS = new Set(['openai-compatible', 'flow2api', 'web-gemini'])
+const V1_NORMALIZED_PROVIDER_KEYS = new Set(['openai-compatible', 'flow2api', 'web-gemini', 'grsai'])
 
 function normalizeProviderBaseUrl(providerId: string, rawBaseUrl?: string): string | undefined {
   const providerKey = getProviderKey(providerId)
@@ -67,7 +70,7 @@ function normalizeProviderBaseUrl(providerId: string, rawBaseUrl?: string): stri
 
   const baseUrl = readTrimmedString(rawBaseUrl)
   if (!baseUrl) return undefined
-  if (providerKey !== 'openai-compatible') return baseUrl
+  if (!V1_NORMALIZED_PROVIDER_KEYS.has(providerKey)) return baseUrl
 
   try {
     const parsed = new URL(baseUrl)
@@ -110,6 +113,42 @@ function isLlmProtocol(value: unknown): value is LlmProtocolType {
   return value === 'responses' || value === 'chat-completions'
 }
 
+function normalizeStoredProviderApiMode(
+  providerKey: string,
+  rawApiMode: unknown,
+): 'gemini-sdk' | 'openai-official' | undefined {
+  if (rawApiMode === undefined) return undefined
+  if (rawApiMode !== 'gemini-sdk' && rawApiMode !== 'openai-official') {
+    throw new Error('PROVIDER_API_MODE_INVALID')
+  }
+  if (providerKey === 'gemini-compatible' && rawApiMode === 'openai-official') {
+    return 'gemini-sdk'
+  }
+  return rawApiMode
+}
+
+function normalizeStoredProviderGatewayRoute(
+  providerKey: string,
+  rawGatewayRoute: unknown,
+): GatewayRouteType | undefined {
+  if (OPENAI_COMPAT_PROVIDER_KEYS.has(providerKey)) {
+    return 'openai-compat'
+  }
+  if (providerKey === 'gemini-compatible' || rawGatewayRoute === 'official') {
+    return 'official'
+  }
+  if (rawGatewayRoute === undefined) {
+    return undefined
+  }
+  if (rawGatewayRoute === 'openai-compat') {
+    return 'official'
+  }
+  if (rawGatewayRoute !== 'official') {
+    throw new Error('PROVIDER_GATEWAY_ROUTE_INVALID')
+  }
+  return 'official'
+}
+
 function assertModelKey(value: string, field: string): { provider: string; modelId: string; modelKey: string } {
   const parsed = parseModelKeyStrict(value)
   if (!parsed) {
@@ -150,31 +189,18 @@ function parseCustomProviders(rawProviders: string | null | undefined): CustomPr
     }
 
     const providerKey = getProviderKey(id).toLowerCase()
-    const apiModeRaw = raw.apiMode
     let apiMode: 'gemini-sdk' | 'openai-official' | undefined
-    if (apiModeRaw === undefined) {
-      apiMode = undefined
-    } else if (apiModeRaw === 'gemini-sdk' || apiModeRaw === 'openai-official') {
-      if (providerKey === 'gemini-compatible' && apiModeRaw === 'openai-official') {
-        throw new Error(`PROVIDER_API_MODE_INVALID: providers[${index}].apiMode`)
-      }
-      apiMode = apiModeRaw
-    } else {
+    let gatewayRoute: GatewayRouteType | undefined
+    try {
+      apiMode = normalizeStoredProviderApiMode(providerKey, raw.apiMode)
+    } catch {
       throw new Error(`PROVIDER_API_MODE_INVALID: providers[${index}].apiMode`)
     }
 
-    const gatewayRouteRaw = raw.gatewayRoute
-    let gatewayRoute: GatewayRouteType | undefined
-    if (gatewayRouteRaw === undefined) {
-      gatewayRoute = undefined
-    } else if (!isGatewayRoute(gatewayRouteRaw)) {
+    try {
+      gatewayRoute = normalizeStoredProviderGatewayRoute(providerKey, raw.gatewayRoute)
+    } catch {
       throw new Error(`PROVIDER_GATEWAY_ROUTE_INVALID: providers[${index}].gatewayRoute`)
-    } else if (providerKey === 'openai-compatible' && gatewayRouteRaw === 'official') {
-      throw new Error(`PROVIDER_GATEWAY_ROUTE_INVALID: providers[${index}].gatewayRoute`)
-    } else if (providerKey !== 'openai-compatible' && gatewayRouteRaw === 'openai-compat') {
-      throw new Error(`PROVIDER_GATEWAY_ROUTE_INVALID: providers[${index}].gatewayRoute`)
-    } else {
-      gatewayRoute = gatewayRouteRaw
     }
 
     providers.push({
@@ -334,10 +360,10 @@ export async function resolveModelSelection(
   }
 
   const providerKey = getProviderKey(exact.provider).toLowerCase()
-  const llmProtocol = mediaType === 'llm' && providerKey === 'openai-compatible'
+  const llmProtocol = mediaType === 'llm' && OPENAI_COMPAT_PROVIDER_KEYS.has(providerKey)
     ? (exact.llmProtocol || 'chat-completions')
     : undefined
-  const compatMediaTemplate = (mediaType === 'image' || mediaType === 'video') && providerKey === 'openai-compatible'
+  const compatMediaTemplate = (mediaType === 'image' || mediaType === 'video') && OPENAI_COMPAT_PROVIDER_KEYS.has(providerKey)
     ? exact.compatMediaTemplate
     : undefined
 
@@ -365,10 +391,10 @@ async function resolveSingleModelSelection(
 
   const model = models[0]
   const providerKey = getProviderKey(model.provider).toLowerCase()
-  const llmProtocol = mediaType === 'llm' && providerKey === 'openai-compatible'
+  const llmProtocol = mediaType === 'llm' && OPENAI_COMPAT_PROVIDER_KEYS.has(providerKey)
     ? (model.llmProtocol || 'chat-completions')
     : undefined
-  const compatMediaTemplate = (mediaType === 'image' || mediaType === 'video') && providerKey === 'openai-compatible'
+  const compatMediaTemplate = (mediaType === 'image' || mediaType === 'video') && OPENAI_COMPAT_PROVIDER_KEYS.has(providerKey)
     ? model.compatMediaTemplate
     : undefined
 
@@ -427,7 +453,13 @@ export async function getProviderConfig(userId: string, providerId: string): Pro
     id: provider.id,
     name: provider.name,
     apiKey: decryptApiKey(provider.apiKey),
-    baseUrl: normalizeProviderBaseUrl(provider.id, provider.baseUrl),
+    baseUrl: resolveWebGeminiRuntimeBaseUrl(
+      provider.id,
+      resolveFlow2ApiRuntimeBaseUrl(
+        provider.id,
+        normalizeProviderBaseUrl(provider.id, provider.baseUrl),
+      ),
+    ),
     apiMode: provider.apiMode,
     gatewayRoute: provider.gatewayRoute,
   }

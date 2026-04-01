@@ -176,7 +176,9 @@
       "vidu_step1": "进入生数科技 Vidu 平台，点击「新建 API Key」",
       "openai_compatible_step1": "填写任意 OpenAI 协议兼容服务的 Base URL 与 API Key",
       "gemini_compatible_step1": "填写任意 Gemini 协议兼容服务的 Base URL 与 API Key",
+      "web_gemini_step1": "填写本地 Web Gemini 服务的 Base URL（默认 http://127.0.0.1:4000/v1）与 API Key；若服务未启用鉴权，可填写任意非空字符串",
       "bailian_step1": "进入阿里云百炼平台，获取 API Key",
+      "grsai_step1": "进入 GRSAI 渠道后台，获取 API Key",
       "siliconflow_step1": "进入硅基流动控制台，创建 API Key"
     }
   },

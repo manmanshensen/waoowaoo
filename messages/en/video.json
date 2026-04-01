@@ -35,6 +35,9 @@
     "regenerateLipSync": "Regenerate Lip Sync",
     "editPrompt": "Edit Prompt",
     "clickToEditPrompt": "Click to edit prompt...",
+    "copyVideoPrompt": "Copy Video Prompt",
+    "copiedVideoPrompt": "Video Prompt Copied",
+    "uploadVideo": "Upload Video",
     "shot": "Shot {number}",
     "unknownShotType": "Unknown",
     "correspondingText": "Corresponding Text",
@@ -109,7 +112,10 @@
     "error": {
       "saveFailed": "Failed to save video prompt",
       "lipSyncFailed": "Lip sync failed",
-      "fetchVideosFailed": "Failed to fetch video list"
+      "fetchVideosFailed": "Failed to fetch video list",
+      "copyVideoPromptEmpty": "There is no video prompt to copy",
+      "copyVideoPromptFailed": "Failed to copy video prompt: {error}",
+      "uploadVideoFailed": "Upload video failed: {error}"
     },
     "downloadFailed": "Download failed",
     "unknownError": "Unknown error"

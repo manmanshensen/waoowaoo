@@ -18,7 +18,8 @@ interface VariantPanelRuntimeSnapshot extends PanelRuntimeSnapshot {
 interface UseStoryboardInsertVariantRuntimeParams {
   storyboardId: string
   textPanels: StoryboardPanel[]
-  onInsertPanel: (storyboardId: string, insertAfterPanelId: string, userInput: string) => Promise<void>
+  onInsertPanelWithAI: (storyboardId: string, insertAfterPanelId: string, userInput: string) => Promise<void>
+  onInsertPanelManually: (storyboardId: string, insertAfterPanelId: string, userInput: string) => Promise<void>
   onPanelVariant: (
     sourcePanelId: string,
     storyboardId: string,
@@ -31,7 +32,8 @@ interface UseStoryboardInsertVariantRuntimeParams {
 export function useStoryboardInsertVariantRuntime({
   storyboardId,
   textPanels,
-  onInsertPanel,
+  onInsertPanelWithAI,
+  onInsertPanelManually,
   onPanelVariant,
 }: UseStoryboardInsertVariantRuntimeParams) {
   const [insertModalOpen, setInsertModalOpen] = useState(false)
@@ -71,11 +73,17 @@ export function useStoryboardInsertVariantRuntime({
     setNextPanelForInsert(null)
   }, [])
 
-  const handleInsert = useCallback(async (userInput: string) => {
+  const handleAiInsert = useCallback(async (userInput: string) => {
     if (!insertAfterPanel) return
-    await onInsertPanel(storyboardId, insertAfterPanel.id, userInput)
+    await onInsertPanelWithAI(storyboardId, insertAfterPanel.id, userInput)
     handleCloseInsertModal()
-  }, [handleCloseInsertModal, insertAfterPanel, onInsertPanel, storyboardId])
+  }, [handleCloseInsertModal, insertAfterPanel, onInsertPanelWithAI, storyboardId])
+
+  const handleManualInsert = useCallback(async (userInput: string) => {
+    if (!insertAfterPanel) return
+    await onInsertPanelManually(storyboardId, insertAfterPanel.id, userInput)
+    handleCloseInsertModal()
+  }, [handleCloseInsertModal, insertAfterPanel, onInsertPanelManually, storyboardId])
 
   const handleOpenVariantModal = useCallback((panelIndex: number) => {
     const panel = textPanels[panelIndex]
@@ -112,7 +120,8 @@ export function useStoryboardInsertVariantRuntime({
     variantModalPanel,
     handleOpenInsertModal,
     handleCloseInsertModal,
-    handleInsert,
+    handleAiInsert,
+    handleManualInsert,
     handleOpenVariantModal,
     handleCloseVariantModal,
     handleVariant,

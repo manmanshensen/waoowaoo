@@ -43,6 +43,7 @@ prisma/data
 .env.local
 .env.*.local
 .env.test
+google-credentials.json
 
 # 文档和杂项
 *.md

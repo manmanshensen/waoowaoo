@@ -188,12 +188,16 @@ const PRICING_PROVIDER_ALIASES: Readonly<Record<string, string>> = {
 const OPTIONAL_PRICING_PROVIDER_KEYS = new Set([
   'openai-compatible',
   'gemini-compatible',
+  'flow2api',
+  'web-gemini',
   'bailian',
   'siliconflow',
+  'grsai',
 ])
-const OFFICIAL_ONLY_PROVIDER_KEYS = new Set(['bailian', 'siliconflow'])
+const OFFICIAL_ONLY_PROVIDER_KEYS = new Set(['bailian', 'siliconflow', 'grsai'])
 const RETIRED_PROVIDER_KEYS = new Set(['qwen'])
 const MINIMAX_OFFICIAL_BASE_URL = 'https://api.minimaxi.com/v1'
+const OPENAI_COMPAT_PROVIDER_KEYS = new Set(['openai-compatible', 'flow2api', 'web-gemini'])
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return !!value && typeof value === 'object' && !Array.isArray(value)
@@ -470,7 +474,7 @@ function resolveProviderGatewayRoute(
   rawGatewayRoute: unknown,
 ): GatewayRouteType {
   const providerKey = getProviderKey(providerId)
-  const isOpenAICompatibleProvider = providerKey === 'openai-compatible'
+  const isOpenAICompatibleProvider = OPENAI_COMPAT_PROVIDER_KEYS.has(providerKey)
   const isGeminiCompatibleProvider = providerKey === 'gemini-compatible'
 
   if (rawGatewayRoute !== undefined && !isGatewayRoute(rawGatewayRoute)) {
@@ -967,11 +971,11 @@ function validateModelProviderTypeSupport(models: StoredModel[], providers: Stor
 }
 
 function isOpenAICompatibleLlmModel(model: StoredModel): boolean {
-  return model.type === 'llm' && getProviderKey(model.provider) === 'openai-compatible'
+  return model.type === 'llm' && OPENAI_COMPAT_PROVIDER_KEYS.has(getProviderKey(model.provider))
 }
 
 function isOpenAICompatibleMediaTemplateModel(model: StoredModel): boolean {
-  if (getProviderKey(model.provider) !== 'openai-compatible') return false
+  if (!OPENAI_COMPAT_PROVIDER_KEYS.has(getProviderKey(model.provider))) return false
   return model.type === 'image' || model.type === 'video'
 }
 

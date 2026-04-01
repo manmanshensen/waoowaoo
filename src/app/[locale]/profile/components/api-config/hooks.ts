@@ -120,6 +120,15 @@ export function mergeProvidersForDisplay(
     return merged
 }
 
+function sanitizeProviderForSave(provider: Provider): Provider {
+    const isPresetProvider = PRESET_PROVIDERS.some((presetProvider) => presetProvider.id === provider.id)
+    if (!isPresetProvider) return provider
+
+    const { gatewayRoute: _gatewayRoute, ...rest } = provider
+    void _gatewayRoute
+    return rest
+}
+
 function isRecord(value: unknown): value is Record<string, unknown> {
     return !!value && typeof value === 'object' && !Array.isArray(value)
 }
@@ -397,7 +406,7 @@ export function useProviders(): UseProvidersReturn {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     models: enabledModels,
-                    providers: currentProviders,
+                    providers: currentProviders.map(sanitizeProviderForSave),
                     defaultModels: currentDefaultModels,
                     workflowConcurrency: currentWorkflowConcurrency,
                     capabilityDefaults: currentCapabilityDefaults,

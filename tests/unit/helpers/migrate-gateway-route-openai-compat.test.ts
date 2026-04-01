@@ -19,6 +19,19 @@ describe('gateway-route openai-compat migration', () => {
     expect(result.summary.routeLitellmToOpenaiCompat).toBe(1)
   })
 
+  it('forces web-gemini to openai-compat route', () => {
+    const result = migrateProviderEntry({
+      id: 'web-gemini',
+      gatewayRoute: 'official',
+    })
+
+    expect(result.changed).toBe(true)
+    expect(result.next).toMatchObject({
+      id: 'web-gemini',
+      gatewayRoute: 'openai-compat',
+    })
+  })
+
   it('forces gemini-compatible to gemini-sdk + official route', () => {
     const result = migrateProviderEntry({
       id: 'gemini-compatible:gm-1',
