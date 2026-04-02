@@ -1,11 +1,13 @@
 'use client'
 
-import { useCallback, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { queryKeys } from '@/lib/query/keys'
 import { NovelPromotionStoryboard, NovelPromotionClip, NovelPromotionPanel } from '@/types/project'
 import { PanelEditData } from '../../PanelEditForm'
 import {
+  areStoryboardsEquivalent,
+  buildStoryboardSyncSignature,
   computeStoryboardStartIndex,
   computeTotalPanels,
   formatClipTitle,
@@ -47,41 +49,50 @@ export function useStoryboardState({
   clips,
 }: UseStoryboardStateProps) {
   const queryClient = useQueryClient()
-  const localStoryboards = useMemo(
+  const incomingStoryboards = useMemo(
     () => sortStoryboardsByClipOrder(initialStoryboards, clips),
     [clips, initialStoryboards],
   )
+  const incomingSyncSignature = useMemo(
+    () => buildStoryboardSyncSignature(initialStoryboards, clips),
+    [clips, initialStoryboards],
+  )
+  const [localStoryboards, setLocalStoryboardsState] = useState<NovelPromotionStoryboard[]>(incomingStoryboards)
+
+  useEffect(() => {
+    setLocalStoryboardsState((previousStoryboards) => (
+      areStoryboardsEquivalent(previousStoryboards, incomingStoryboards)
+        ? previousStoryboards
+        : incomingStoryboards
+    ))
+  }, [incomingStoryboards, incomingSyncSignature])
 
   const setLocalStoryboards = useCallback<React.Dispatch<React.SetStateAction<NovelPromotionStoryboard[]>>>(
     (nextStoryboardsOrUpdater) => {
-      const resolveNextStoryboards = (previousStoryboards: NovelPromotionStoryboard[]) => (
-        typeof nextStoryboardsOrUpdater === 'function'
+      setLocalStoryboardsState((previousStoryboards) => {
+        const nextStoryboards = typeof nextStoryboardsOrUpdater === 'function'
           ? (nextStoryboardsOrUpdater as (previous: NovelPromotionStoryboard[]) => NovelPromotionStoryboard[])(previousStoryboards)
           : nextStoryboardsOrUpdater
-      )
 
-      queryClient.setQueryData(queryKeys.episodeData(projectId, episodeId), (previous: unknown) => {
-        if (!previous || typeof previous !== 'object') return previous
-        const episode = previous as { storyboards?: NovelPromotionStoryboard[] }
-        const previousStoryboards = Array.isArray(episode.storyboards) ? episode.storyboards : []
-        const nextStoryboards = resolveNextStoryboards(previousStoryboards)
-        if (nextStoryboards === previousStoryboards) return previous
-        return {
-          ...episode,
-          storyboards: nextStoryboards,
-        }
-      })
+        queryClient.setQueryData(queryKeys.episodeData(projectId, episodeId), (previous: unknown) => {
+          if (!previous || typeof previous !== 'object') return previous
+          const episode = previous as { storyboards?: NovelPromotionStoryboard[] }
+          return {
+            ...episode,
+            storyboards: nextStoryboards,
+          }
+        })
 
-      queryClient.setQueryData(queryKeys.storyboards.all(episodeId), (previous: unknown) => {
-        if (!previous || typeof previous !== 'object') return previous
-        const payload = previous as { storyboards?: NovelPromotionStoryboard[] }
-        const previousStoryboards = Array.isArray(payload.storyboards) ? payload.storyboards : []
-        const nextStoryboards = resolveNextStoryboards(previousStoryboards)
-        if (nextStoryboards === previousStoryboards) return previous
-        return {
-          ...payload,
-          storyboards: nextStoryboards,
-        }
+        queryClient.setQueryData(queryKeys.storyboards.all(episodeId), (previous: unknown) => {
+          if (!previous || typeof previous !== 'object') return previous
+          const payload = previous as { storyboards?: NovelPromotionStoryboard[] }
+          return {
+            ...payload,
+            storyboards: nextStoryboards,
+          }
+        })
+
+        return nextStoryboards
       })
     },
     [episodeId, projectId, queryClient],

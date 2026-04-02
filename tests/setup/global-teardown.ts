@@ -1,6 +1,19 @@
 import { execSync } from 'node:child_process'
 import { loadTestEnv } from './env'
 
+const TEST_COMPOSE_PROJECT_NAME = 'waoowaoo_teststack'
+
+function runTestCompose(command: string) {
+  execSync(`docker compose -f docker-compose.test.yml ${command}`, {
+    cwd: process.cwd(),
+    stdio: 'inherit',
+    env: {
+      ...process.env,
+      COMPOSE_PROJECT_NAME: TEST_COMPOSE_PROJECT_NAME,
+    },
+  })
+}
+
 export async function runGlobalTeardown() {
   loadTestEnv()
 
@@ -8,8 +21,5 @@ export async function runGlobalTeardown() {
   if (!shouldBootstrap) return
   if (process.env.BILLING_TEST_KEEP_SERVICES === '1') return
 
-  execSync('docker compose -f docker-compose.test.yml down -v --remove-orphans', {
-    cwd: process.cwd(),
-    stdio: 'inherit',
-  })
+  runTestCompose('down -v --remove-orphans')
 }

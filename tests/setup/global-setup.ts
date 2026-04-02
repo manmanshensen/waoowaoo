@@ -5,6 +5,19 @@ import Redis from 'ioredis'
 import { loadTestEnv } from './env'
 import { runGlobalTeardown } from './global-teardown'
 
+const TEST_COMPOSE_PROJECT_NAME = 'waoowaoo_teststack'
+
+function runTestCompose(command: string) {
+  execSync(`docker compose -f docker-compose.test.yml ${command}`, {
+    cwd: process.cwd(),
+    stdio: 'inherit',
+    env: {
+      ...process.env,
+      COMPOSE_PROJECT_NAME: TEST_COMPOSE_PROJECT_NAME,
+    },
+  })
+}
+
 function parseDbUrl(dbUrl: string) {
   const url = new URL(dbUrl)
   return {
@@ -75,15 +88,8 @@ export default async function globalSetup() {
     return async () => {}
   }
 
-  execSync('docker compose -f docker-compose.test.yml down -v --remove-orphans', {
-    cwd: process.cwd(),
-    stdio: 'inherit',
-  })
-
-  execSync('docker compose -f docker-compose.test.yml up -d --remove-orphans', {
-    cwd: process.cwd(),
-    stdio: 'inherit',
-  })
+  runTestCompose('down -v --remove-orphans')
+  runTestCompose('up -d --remove-orphans')
 
   await waitForMysql()
   await waitForRedis()
