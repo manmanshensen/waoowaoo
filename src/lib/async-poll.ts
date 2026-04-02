@@ -30,6 +30,7 @@ export interface PollResult {
     resultUrl?: string
     imageUrl?: string
     videoUrl?: string
+    actualVideoTokens?: number
     downloadHeaders?: Record<string, string>
     error?: string
 }
@@ -529,6 +530,7 @@ async function pollArkTask(
         status: result.status,
         videoUrl: result.videoUrl,
         resultUrl: result.videoUrl,
+        ...(typeof result.actualVideoTokens === 'number' ? { actualVideoTokens: result.actualVideoTokens } : {}),
         error: result.error
     }
 }

@@ -17,6 +17,10 @@ import {
   normalizeToBase64ForGeneration,
 } from '@/lib/media/outbound-image'
 import {
+  type LocationAvailableSlot,
+  stringifyLocationAvailableSlots,
+} from '@/lib/location-available-slots'
+import {
   AnyObj,
   parseImageUrls,
   pickFirstString,
@@ -35,6 +39,7 @@ interface LocationImageRecord {
   id: string
   locationId: string
   description: string | null
+  availableSlots?: string | null
   imageUrl: string | null
   previousDescription: string | null
   location: {
@@ -138,7 +143,7 @@ export async function handleModifyAssetImageTask(job: Job<TaskJobData>) {
             descriptions: appearance.descriptions,
             fallbackDescription: appearance.description,
             index: imageIndex,
-            nextDescription,
+            nextDescription: nextDescription.prompt,
           })
         }
       } catch (err) {
@@ -215,7 +220,10 @@ export async function handleModifyAssetImageTask(job: Job<TaskJobData>) {
     const labeled = await withLabelBar(source, label)
     const cosKey = await uploadImageSourceToCos(labeled, 'location-modify', locationImage.id)
 
-    let extractedDescription: string | undefined
+    let extractedDescription: {
+      prompt: string
+      availableSlots: LocationAvailableSlot[]
+    } | null = null
     if (locationImage.description && modifyInstruction) {
       try {
         const userModels = await getUserModels(job.data.userId)
@@ -245,7 +253,10 @@ export async function handleModifyAssetImageTask(job: Job<TaskJobData>) {
         previousImageUrl: locationImage.imageUrl,
         previousDescription: locationImage.description || null,
         imageUrl: cosKey,
-        ...(extractedDescription ? { description: extractedDescription } : {}),
+        ...(extractedDescription ? {
+          description: extractedDescription.prompt,
+          availableSlots: stringifyLocationAvailableSlots(extractedDescription.availableSlots),
+        } : {}),
       },
     })
 

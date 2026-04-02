@@ -28,6 +28,7 @@ interface CharacterLike {
 
 interface LocationImageLike {
   description?: string | null
+  availableSlots?: string | null
   imageIndex?: number
   isSelected: boolean
   imageUrl: string | null
@@ -53,6 +54,7 @@ interface PanelLike {
 export interface PanelCharacterReference {
   name: string
   appearance?: string
+  slot?: string
 }
 
 interface NovelDataDb {
@@ -145,11 +147,12 @@ export function parsePanelCharacterReferences(value: string | null | undefined):
       .map((item: unknown) => {
         if (typeof item === 'string') return { name: item }
         if (!item || typeof item !== 'object') return null
-        const candidate = item as { name?: unknown; appearance?: unknown }
+        const candidate = item as { name?: unknown; appearance?: unknown; slot?: unknown }
         if (typeof candidate.name === 'string') {
           return {
             name: candidate.name,
             appearance: typeof candidate.appearance === 'string' ? candidate.appearance : undefined,
+            slot: typeof candidate.slot === 'string' ? candidate.slot : undefined,
           }
         }
         return null

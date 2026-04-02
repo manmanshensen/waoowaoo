@@ -5,7 +5,6 @@ import { buildMockRequest } from '../../../helpers/request'
 
 type AuthState = {
   authenticated: boolean
-  projectMode: 'novel-promotion' | 'other'
 }
 
 type LLMRouteCase = {
@@ -23,7 +22,6 @@ type RouteContext = {
 
 const authState = vi.hoisted<AuthState>(() => ({
   authenticated: true,
-  projectMode: 'novel-promotion',
 }))
 
 const maybeSubmitLLMTaskMock = vi.hoisted(() =>
@@ -77,14 +75,14 @@ vi.mock('@/lib/api-auth', () => {
       if (!authState.authenticated) return unauthorized()
       return {
         session: { user: { id: 'user-1' } },
-        project: { id: projectId, userId: 'user-1', mode: authState.projectMode },
+        project: { id: projectId, userId: 'user-1' },
       }
     },
     requireProjectAuthLight: async (projectId: string) => {
       if (!authState.authenticated) return unauthorized()
       return {
         session: { user: { id: 'user-1' } },
-        project: { id: projectId, userId: 'user-1', mode: authState.projectMode },
+        project: { id: projectId, userId: 'user-1' },
       }
     },
   }
@@ -170,6 +168,13 @@ const ROUTE_CASES: ReadonlyArray<LLMRouteCase> = [
     expectedTaskType: TASK_TYPE.AI_CREATE_LOCATION,
     expectedTargetType: 'NovelPromotionLocationDesign',
     expectedProjectId: 'project-1',
+  },
+  {
+    routeFile: 'src/app/api/user/ai-story-expand/route.ts',
+    body: { prompt: '宫廷复仇女主回京' },
+    expectedTaskType: TASK_TYPE.AI_STORY_EXPAND,
+    expectedTargetType: 'HomeAiStoryExpand',
+    expectedProjectId: 'home-ai-write',
   },
   {
     routeFile: 'src/app/api/novel-promotion/[projectId]/ai-modify-appearance/route.ts',
@@ -322,7 +327,6 @@ describe('api contract - llm observe routes (behavior)', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     authState.authenticated = true
-    authState.projectMode = 'novel-promotion'
     maybeSubmitLLMTaskMock.mockResolvedValue(
       NextResponse.json({
         success: true,
@@ -336,7 +340,7 @@ describe('api contract - llm observe routes (behavior)', () => {
   })
 
   it('keeps expected coverage size', () => {
-    expect(ROUTE_CASES.length).toBe(22)
+    expect(ROUTE_CASES.length).toBe(23)
   })
 
   for (const routeCase of ROUTE_CASES) {

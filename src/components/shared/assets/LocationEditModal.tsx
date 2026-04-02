@@ -14,6 +14,7 @@ import {
     useUpdateProjectLocationDescription,
     useUpdateProjectLocationName,
 } from '@/lib/query/hooks'
+import type { LocationAvailableSlot } from '@/lib/location-available-slots'
 
 export interface LocationEditModalProps {
     mode: 'asset-hub' | 'project'
@@ -56,6 +57,7 @@ export function LocationEditModal({
 
     const [editingName, setEditingName] = useState(locationName)
     const [editingDescription, setEditingDescription] = useState(description || summary || '')
+    const [availableSlots, setAvailableSlots] = useState<LocationAvailableSlot[]>([])
     const [aiModifyInstruction, setAiModifyInstruction] = useState('')
     const [isAiModifying, setIsAiModifying] = useState(false)
     const [isSaving, setIsSaving] = useState(false)
@@ -113,6 +115,7 @@ export function LocationEditModal({
             await updateAssetHubSummary.mutateAsync({
                 locationId,
                 summary: editingDescription,
+                availableSlots,
             })
             return
         }
@@ -121,6 +124,7 @@ export function LocationEditModal({
             locationId,
             imageIndex: resolvedImageIndex,
             description: editingDescription,
+            availableSlots,
         })
     }
 
@@ -139,6 +143,7 @@ export function LocationEditModal({
                 })
                 if (data?.modifiedDescription) {
                     setEditingDescription(data.modifiedDescription)
+                    setAvailableSlots(Array.isArray(data.availableSlots) ? data.availableSlots : [])
                     onUpdate?.(data.modifiedDescription)
                     setAiModifyInstruction('')
                 }
@@ -154,6 +159,7 @@ export function LocationEditModal({
             const nextDescription = data?.modifiedDescription || data?.prompt || ''
             if (nextDescription) {
                 setEditingDescription(nextDescription)
+                setAvailableSlots(Array.isArray(data.availableSlots) ? data.availableSlots : [])
                 onUpdate?.(nextDescription)
                 setAiModifyInstruction('')
             }

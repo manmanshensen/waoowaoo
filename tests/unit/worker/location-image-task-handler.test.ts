@@ -63,6 +63,9 @@ describe('worker location-image-task-handler behavior', () => {
       locationId: 'location-1',
       imageIndex: 0,
       description: '雨夜街道',
+      availableSlots: JSON.stringify([
+        '街道左侧靠墙的留白位置',
+      ]),
       location: { name: 'Old Town' },
     })
 
@@ -75,6 +78,9 @@ describe('worker location-image-task-handler behavior', () => {
           locationId: 'location-1',
           imageIndex: 0,
           description: '雨夜街道',
+          availableSlots: JSON.stringify([
+            '街道左侧靠墙的留白位置',
+          ]),
         },
       ],
     })
@@ -96,10 +102,25 @@ describe('worker location-image-task-handler behavior', () => {
 
     expect(sharedMock.generateLabeledImageToCos).toHaveBeenCalledWith(
       expect.objectContaining({
-        prompt: `雨夜街道，${animeStylePrompt}`,
+        prompt: expect.stringContaining('雨夜街道'),
         label: 'Old Town',
         targetId: 'location-image-1',
         options: expect.objectContaining({ aspectRatio: '1:1' }),
+      }),
+    )
+    expect(sharedMock.generateLabeledImageToCos).toHaveBeenCalledWith(
+      expect.objectContaining({
+        prompt: expect.stringContaining('可站位置：'),
+      }),
+    )
+    expect(sharedMock.generateLabeledImageToCos).toHaveBeenCalledWith(
+      expect.objectContaining({
+        prompt: expect.stringContaining('街道左侧靠墙的留白位置'),
+      }),
+    )
+    expect(sharedMock.generateLabeledImageToCos).toHaveBeenCalledWith(
+      expect.objectContaining({
+        prompt: expect.stringContaining('必须使用宽广完整的场景全景构图'),
       }),
     )
     const generationCall = sharedMock.generateLabeledImageToCos.mock.calls[0] as unknown as [{ prompt: string }] | undefined
@@ -119,7 +140,7 @@ describe('worker location-image-task-handler behavior', () => {
 
     expect(sharedMock.generateLabeledImageToCos).toHaveBeenCalledWith(
       expect.objectContaining({
-        prompt: `雨夜街道，${getArtStylePrompt('realistic', 'zh')}`,
+        prompt: expect.stringContaining(getArtStylePrompt('realistic', 'zh')),
       }),
     )
   })

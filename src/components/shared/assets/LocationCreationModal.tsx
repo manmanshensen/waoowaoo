@@ -23,6 +23,7 @@ import {
 import { useImageGenerationCount } from '@/lib/image-generation/use-image-generation-count'
 import ImageGenerationInlineCountButton from '@/components/image-generation/ImageGenerationInlineCountButton'
 import { getImageGenerationCountOptions } from '@/lib/image-generation/count'
+import type { LocationAvailableSlot } from '@/lib/location-available-slots'
 
 export interface LocationCreationModalProps {
     mode: 'asset-hub' | 'project'
@@ -73,6 +74,7 @@ export function LocationCreationModal({
     const [referenceImagesBase64, setReferenceImagesBase64] = useState<string[]>([])
     const [referenceImageFiles, setReferenceImageFiles] = useState<File[]>([])
     const fileInputRef = useRef<HTMLInputElement>(null)
+    const [availableSlots, setAvailableSlots] = useState<LocationAvailableSlot[]>([])
 
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [isAiDesigning, setIsAiDesigning] = useState(false)
@@ -193,6 +195,7 @@ export function LocationCreationModal({
                 ? await aiDesignAssetHubLocation.mutateAsync(aiInstruction)
                 : await aiCreateProjectLocation.mutateAsync({ userInstruction: aiInstruction })
             setDescription(data.prompt || '')
+            setAvailableSlots(Array.isArray(data.availableSlots) ? data.availableSlots : [])
             setAiInstruction('')
         } catch (error: unknown) {
             if (getErrorStatus(error) === 402) {
@@ -243,12 +246,14 @@ export function LocationCreationModal({
                     summary: body.description,
                     artStyle: body.artStyle,
                     folderId: body.folderId ?? null,
+                    availableSlots,
                 })
             } else {
                 await createProjectLocation.mutateAsync({
                     name: body.name,
                     description: body.description,
                     artStyle: body.artStyle,
+                    availableSlots,
                 })
             }
 
@@ -278,6 +283,7 @@ export function LocationCreationModal({
                     artStyle,
                     folderId: folderId ?? null,
                     count: locationGenerationCount,
+                    availableSlots,
                 }) as CreatedLocationResponse
                 const createdLocationId = result.location?.id
                 if (!createdLocationId) {
@@ -294,6 +300,7 @@ export function LocationCreationModal({
                     description: description.trim(),
                     artStyle,
                     count: locationGenerationCount,
+                    availableSlots,
                 }) as CreatedLocationResponse
                 const createdLocationId = result.location?.id
                 if (!createdLocationId) {

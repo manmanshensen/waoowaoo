@@ -44,6 +44,7 @@ const TASK_INTENT_BY_TYPE: Record<TaskType, TaskIntent> = {
   [TASK_TYPE.SCREENPLAY_CONVERT]: 'convert',
   [TASK_TYPE.VOICE_ANALYZE]: 'analyze',
   [TASK_TYPE.ANALYZE_GLOBAL]: 'analyze',
+  [TASK_TYPE.AI_STORY_EXPAND]: 'generate',
   [TASK_TYPE.AI_MODIFY_APPEARANCE]: 'modify',
   [TASK_TYPE.AI_MODIFY_LOCATION]: 'modify',
   [TASK_TYPE.AI_MODIFY_SHOT_PROMPT]: 'modify',

@@ -9,6 +9,7 @@ import {
   invalidateGlobalCharacters,
   invalidateGlobalLocations,
 } from './asset-hub-mutations-shared'
+import type { LocationAvailableSlot } from '@/lib/location-available-slots'
 
 export function useUpdateCharacterName() {
   const queryClient = useQueryClient()
@@ -134,9 +135,11 @@ export function useUpdateLocationSummary() {
     mutationFn: async ({
       locationId,
       summary,
+      availableSlots,
     }: {
       locationId: string
       summary: string
+      availableSlots?: LocationAvailableSlot[]
     }) => {
       return await requestJsonWithError(`/api/assets/${locationId}`, {
         method: 'PATCH',
@@ -145,6 +148,7 @@ export function useUpdateLocationSummary() {
           scope: 'global',
           kind: 'location',
           summary,
+          ...(availableSlots ? { availableSlots } : {}),
         }),
       }, 'Failed to update location summary')
     },
@@ -179,7 +183,7 @@ export function useAiModifyCharacterDescription() {
         },
         'Failed to modify character description',
       )
-      return resolveTaskResponse<{ modifiedDescription?: string }>(response)
+      return resolveTaskResponse<{ modifiedDescription?: string; availableSlots?: LocationAvailableSlot[] }>(response)
     },
   })
 }
@@ -211,7 +215,7 @@ export function useAiModifyLocationDescription() {
         },
         'Failed to modify location description',
       )
-      return resolveTaskResponse<{ modifiedDescription?: string }>(response)
+      return resolveTaskResponse<{ modifiedDescription?: string; availableSlots?: LocationAvailableSlot[] }>(response)
     },
   })
 }

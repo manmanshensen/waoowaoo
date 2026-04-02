@@ -36,6 +36,7 @@ const BILLABLE_TASK_TYPES = new Set<TaskType>([
   TASK_TYPE.SCREENPLAY_CONVERT,
   TASK_TYPE.VOICE_ANALYZE,
   TASK_TYPE.ANALYZE_GLOBAL,
+  TASK_TYPE.AI_STORY_EXPAND,
   TASK_TYPE.AI_MODIFY_APPEARANCE,
   TASK_TYPE.AI_MODIFY_LOCATION,
   TASK_TYPE.AI_MODIFY_SHOT_PROMPT,
@@ -159,6 +160,7 @@ function buildVideoTaskInfo(taskType: TaskType, payload: AnyPayload): TaskBillin
   const generationOptions = toRecord(payload?.generationOptions)
   const resolution = readString(generationOptions.resolution) || readString(payload?.resolution)
   const duration = readNumber(generationOptions.duration) ?? readNumber(payload?.duration)
+  const aspectRatio = readString(generationOptions.aspectRatio) || readString(payload?.aspectRatio)
   const generateAudio = typeof generationOptions.generateAudio === 'boolean'
     ? generationOptions.generateAudio
     : undefined
@@ -166,8 +168,10 @@ function buildVideoTaskInfo(taskType: TaskType, payload: AnyPayload): TaskBillin
   const metadata = {
     ...(resolution ? { resolution } : {}),
     ...(typeof duration === 'number' ? { duration } : {}),
+    ...(aspectRatio ? { aspectRatio } : {}),
     generationMode,
     ...(typeof generateAudio === 'boolean' ? { generateAudio } : {}),
+    containsVideoInput: false,
   }
   let maxFrozenCost = 0
   try {
@@ -277,6 +281,7 @@ export function buildDefaultTaskBillingInfo(taskType: TaskType, payload: AnyPayl
     case TASK_TYPE.SCREENPLAY_CONVERT:
     case TASK_TYPE.VOICE_ANALYZE:
     case TASK_TYPE.ANALYZE_GLOBAL:
+    case TASK_TYPE.AI_STORY_EXPAND:
     case TASK_TYPE.AI_MODIFY_APPEARANCE:
     case TASK_TYPE.AI_MODIFY_LOCATION:
     case TASK_TYPE.AI_MODIFY_SHOT_PROMPT:

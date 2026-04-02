@@ -81,6 +81,10 @@ export const PROMPT_CATALOG: Record<PromptId, PromptCatalogEntry> = {
       'clip_content',
     ],
   },
+  [PROMPT_IDS.NP_AI_STORY_EXPAND]: {
+    pathStem: 'novel-promotion/ai_story_expand',
+    variableKeys: ['input'],
+  },
   [PROMPT_IDS.NP_CHARACTER_CREATE]: {
     pathStem: 'novel-promotion/character_create',
     variableKeys: ['user_input'],

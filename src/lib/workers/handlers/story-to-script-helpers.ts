@@ -2,6 +2,7 @@ import { prisma } from '@/lib/prisma'
 import { removeLocationPromptSuffix } from '@/lib/constants'
 import type { StoryToScriptClipCandidate } from '@/lib/novel-promotion/story-to-script/orchestrator'
 import { seedProjectLocationBackedImageSlots } from '@/lib/assets/services/location-backed-assets'
+import { normalizeLocationAvailableSlots } from '@/lib/location-available-slots'
 
 export type AnyObj = Record<string, unknown>
 
@@ -30,12 +31,27 @@ export function resolveClipRecordId(clipMap: Map<string, string>, clipId: string
   return clipMap.get(clipId) || null
 }
 
+type CharacterCreateDb = {
+  novelPromotionCharacter: typeof prisma.novelPromotionCharacter
+}
+
+type LocationCreateDb = {
+  novelPromotionLocation: typeof prisma.novelPromotionLocation
+  locationImage: typeof prisma.locationImage
+}
+
+type ClipPersistDb = {
+  novelPromotionClip: typeof prisma.novelPromotionClip
+}
+
 export async function persistAnalyzedCharacters(params: {
   projectInternalId: string
   existingNames: Set<string>
   analyzedCharacters: Record<string, unknown>[]
+  db?: CharacterCreateDb
 }) {
   const created: Array<{ id: string; name: string }> = []
+  const db = params.db ?? prisma
 
   for (const item of params.analyzedCharacters) {
     const name = asString(item.name).trim()
@@ -58,7 +74,7 @@ export async function persistAnalyzedCharacters(params: {
       age_range: item.age_range,
     }
 
-    const createdRow = await prisma.novelPromotionCharacter.create({
+    const createdRow = await db.novelPromotionCharacter.create({
       data: {
         novelPromotionProjectId: params.projectInternalId,
         name,
@@ -84,9 +100,11 @@ export async function persistAnalyzedLocations(params: {
   projectInternalId: string
   existingNames: Set<string>
   analyzedLocations: Record<string, unknown>[]
+  db?: LocationCreateDb
 }) {
   const created: Array<{ id: string; name: string }> = []
   const invalidKeywords = ['幻想', '抽象', '无明确', '空间锚点', '未说明', '不明确']
+  const db = params.db ?? prisma
 
   for (const item of params.analyzedLocations) {
     const name = asString(item.name).trim()
@@ -106,7 +124,7 @@ export async function persistAnalyzedLocations(params: {
     const key = name.toLowerCase()
     if (params.existingNames.has(key)) continue
 
-    const location = await prisma.novelPromotionLocation.create({
+    const location = await db.novelPromotionLocation.create({
       data: {
         novelPromotionProjectId: params.projectInternalId,
         name,
@@ -119,10 +137,13 @@ export async function persistAnalyzedLocations(params: {
     })
 
     const cleanDescriptions = mergedDescriptions.map((desc) => removeLocationPromptSuffix(desc || ''))
+    const availableSlots = normalizeLocationAvailableSlots(item.available_slots)
     await seedProjectLocationBackedImageSlots({
       locationId: location.id,
       descriptions: cleanDescriptions,
       fallbackDescription: asString(item.summary) || name,
+      availableSlots,
+      locationImageModel: db.locationImage,
     })
 
     params.existingNames.add(key)
@@ -136,8 +157,10 @@ export async function persistAnalyzedProps(params: {
   projectInternalId: string
   existingNames: Set<string>
   analyzedProps: Record<string, unknown>[]
+  db?: LocationCreateDb
 }) {
   const created: Array<{ id: string; name: string }> = []
+  const db = params.db ?? prisma
 
   for (const item of params.analyzedProps) {
     const name = asString(item.name).trim()
@@ -147,7 +170,7 @@ export async function persistAnalyzedProps(params: {
     const key = name.toLowerCase()
     if (params.existingNames.has(key)) continue
 
-    const prop = await prisma.novelPromotionLocation.create({
+    const prop = await db.novelPromotionLocation.create({
       data: {
         novelPromotionProjectId: params.projectInternalId,
         name,
@@ -163,6 +186,8 @@ export async function persistAnalyzedProps(params: {
       locationId: prop.id,
       descriptions: [summary],
       fallbackDescription: summary,
+      availableSlots: [],
+      locationImageModel: db.locationImage,
     })
 
     params.existingNames.add(key)
@@ -175,12 +200,14 @@ export async function persistAnalyzedProps(params: {
 export async function persistClips(params: {
   episodeId: string
   clipList: StoryToScriptClipCandidate[]
+  db?: ClipPersistDb
 }) {
-  const clipModel = prisma.novelPromotionClip as unknown as {
+  const db = params.db ?? prisma
+  const clipModel = db.novelPromotionClip as unknown as {
     update: (args: { where: { id: string }; data: Record<string, unknown>; select: { id: true } }) => Promise<{ id: string }>
     create: (args: { data: Record<string, unknown>; select: { id: true } }) => Promise<{ id: string }>
-    findMany: typeof prisma.novelPromotionClip.findMany
-    deleteMany: typeof prisma.novelPromotionClip.deleteMany
+    findMany: typeof db.novelPromotionClip.findMany
+    deleteMany: typeof db.novelPromotionClip.deleteMany
   }
   const existing = await clipModel.findMany({
     where: { episodeId: params.episodeId },

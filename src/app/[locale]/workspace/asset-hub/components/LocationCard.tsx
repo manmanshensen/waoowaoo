@@ -94,7 +94,7 @@ export function LocationCard({ location, assetType = 'location', onImageClick, o
   const isTaskRunning = serverTaskRunning || transientSubmitting
   const displaySelectionImages = resolveDisplayImageSlots(orderedImages, {
     hasRunningTask: isTaskRunning,
-    requestedCount: generationCount,
+    requestedCount: generatedImageCount > 1 ? generatedImageCount : generationCount,
   })
   const displaySlotCount = displaySelectionImages.length
   const hasMultipleImages = generatedImageCount > 1
@@ -226,19 +226,24 @@ export function LocationCard({ location, assetType = 'location', onImageClick, o
           <div className="flex items-center gap-1 ml-2">
             <ImageGenerationInlineCountButton
               prefix={isTaskRunning ? (
-                <TaskStatusInline state={displayTaskPresentation} className="[&_span]:sr-only [&_svg]:text-[var(--glass-tone-info-fg)]" />
+                <>
+                  <TaskStatusInline state={displayTaskPresentation} className="[&_span]:sr-only [&_svg]:text-[var(--glass-tone-info-fg)]" />
+                  <span className="text-[10px] font-medium text-[var(--glass-tone-info-fg)]">{tAssets('image.regenCountPrefix')}</span>
+                </>
               ) : (
-                <AppIcon name="refresh" className="w-4 h-4 text-[var(--glass-tone-info-fg)]" />
+                <>
+                  <AppIcon name="refresh" className="w-4 h-4 text-[var(--glass-tone-info-fg)]" />
+                  <span className="text-[10px] font-medium text-[var(--glass-tone-info-fg)]">{tAssets('image.regenCountPrefix')}</span>
+                </>
               )}
-              suffix={null}
               value={generationCount}
               options={getImageGenerationCountOptions('location')}
               onValueChange={setGenerationCount}
-              onClick={() => handleGenerate(generationCount)}
+              onClick={() => handleGenerate(generatedImageCount)}
               disabled={isTaskRunning}
-              ariaLabel={tAssets('image.selectCount')}
-              className="inline-flex h-6 items-center gap-0.5 rounded px-1 hover:bg-[var(--glass-tone-info-bg)] transition-colors disabled:opacity-50"
-              selectClassName="appearance-none bg-transparent border-0 pl-0 pr-3 text-[10px] font-semibold text-[var(--glass-tone-info-fg)] outline-none cursor-pointer leading-none transition-colors"
+              showCountControl={false}
+              ariaLabel={tAssets('image.regenCountPrefix')}
+              className="inline-flex h-6 items-center justify-center gap-1 rounded-md px-1.5 hover:bg-[var(--glass-tone-info-bg)] transition-colors disabled:opacity-50"
             />
             {hasPreviousVersion && (
               <button onClick={handleUndo} className="glass-btn-base glass-btn-soft h-6 w-6 rounded-md" title={tAssets('image.undo')}>

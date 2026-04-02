@@ -9,6 +9,7 @@ import type { TaskJobData } from '@/lib/task/types'
 import { TASK_TYPE } from '@/lib/task/types'
 import { createWorkerLLMStreamCallbacks, createWorkerLLMStreamContext } from './llm-stream'
 import { buildPrompt, PROMPT_IDS } from '@/lib/prompt-i18n'
+import { normalizeLocationAvailableSlots } from '@/lib/location-available-slots'
 
 function readRequiredString(value: unknown, field: string): string {
   if (typeof value !== 'string' || !value.trim()) {
@@ -19,13 +20,19 @@ function readRequiredString(value: unknown, field: string): string {
 
 import { safeParseJsonObject } from '@/lib/json-repair'
 
-function parseJsonPrompt(responseText: string): string {
+function parseJsonPrompt(responseText: string): {
+  prompt: string
+  availableSlots: ReturnType<typeof normalizeLocationAvailableSlots>
+} {
   const parsed = safeParseJsonObject(responseText)
   const prompt = typeof parsed.prompt === 'string' ? parsed.prompt.trim() : ''
   if (!prompt) {
     throw new Error('No prompt field in response')
   }
-  return prompt
+  return {
+    prompt,
+    availableSlots: normalizeLocationAvailableSlots(parsed.available_slots),
+  }
 }
 
 export async function handleAssetHubAIModifyTask(job: Job<TaskJobData>) {
@@ -96,7 +103,7 @@ export async function handleAssetHubAIModifyTask(job: Job<TaskJobData>) {
   await streamCallbacks.flush()
   await assertTaskActive(job, 'asset_hub_ai_modify_parse')
 
-  const modifiedDescription = parseJsonPrompt(completion.text)
+  const parsed = parseJsonPrompt(completion.text)
 
   await reportTaskProgress(job, 96, {
     stage: 'asset_hub_ai_modify_done',
@@ -110,6 +117,7 @@ export async function handleAssetHubAIModifyTask(job: Job<TaskJobData>) {
 
   return {
     success: true,
-    modifiedDescription,
+    modifiedDescription: parsed.prompt,
+    availableSlots: parsed.availableSlots,
   }
 }

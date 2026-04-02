@@ -13,6 +13,7 @@ import {
   generateLabeledImageToCos,
   pickFirstString,
 } from './image-task-handler-shared'
+import { buildLocationImagePromptCore } from '@/lib/location-image-prompt'
 
 function resolvePayloadArtStyle(payload: AnyObj): ArtStyleValue | undefined {
   if (!Object.prototype.hasOwnProperty.call(payload, 'artStyle')) return undefined
@@ -27,6 +28,7 @@ interface LocationImageRecord {
   id: string
   locationId: string
   description: string | null
+  availableSlots?: string | null
   imageIndex: number
   location?: { name: string } | null
 }
@@ -139,8 +141,13 @@ export async function handleLocationImageTask(job: Job<TaskJobData>) {
     const name = locationNameMap[item.locationId] || item.location?.name || '场景'
     const promptBody = item.description || ''
     if (!promptBody) continue
+    const promptCore = buildLocationImagePromptCore({
+      description: promptBody,
+      availableSlotsRaw: item.availableSlots,
+      locale: job.data.locale === 'en' ? 'en' : 'zh',
+    })
 
-    const prompt = artStyle ? `${addLocationPromptSuffix(promptBody)}，${artStyle}` : addLocationPromptSuffix(promptBody)
+    const prompt = artStyle ? `${addLocationPromptSuffix(promptCore)}，${artStyle}` : addLocationPromptSuffix(promptCore)
     await reportTaskProgress(job, 20 + Math.floor((i / Math.max(locationImages.length, 1)) * 55), {
       stage: 'generate_location_image',
       imageId: item.id,

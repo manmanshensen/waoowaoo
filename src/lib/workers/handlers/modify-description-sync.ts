@@ -7,6 +7,10 @@ import {
   buildCharacterDescriptionFields,
   readIndexedDescription,
 } from '@/lib/assets/description-fields'
+import {
+  type LocationAvailableSlot,
+  normalizeLocationAvailableSlots,
+} from '@/lib/location-available-slots'
 
 export type SyncedAssetType = 'character' | 'location'
 
@@ -22,13 +26,19 @@ function buildImageContext(type: SyncedAssetType, hasReferenceImages: boolean): 
   return '【参考图片】\n请仔细分析参考图片中的建筑风格、装饰元素、光线氛围、色调等关键视觉特征，并将这些特征融入更新后的描述中。'
 }
 
-function parseModifiedDescription(responseText: string): string {
+function parseModifiedDescription(responseText: string): {
+  prompt: string
+  availableSlots: LocationAvailableSlot[]
+} {
   const parsed = safeParseJsonObject(responseText)
   const prompt = trimText(typeof parsed.prompt === 'string' ? parsed.prompt : '')
   if (!prompt) {
     throw new Error('No prompt field in response')
   }
-  return prompt
+  return {
+    prompt,
+    availableSlots: normalizeLocationAvailableSlots(parsed.available_slots),
+  }
 }
 
 export { buildCharacterDescriptionFields, readIndexedDescription }
@@ -43,7 +53,10 @@ export async function generateModifiedAssetDescription(params: {
   referenceImages?: string[]
   locationName?: string
   projectId?: string
-}): Promise<string> {
+}): Promise<{
+  prompt: string
+  availableSlots: LocationAvailableSlot[]
+}> {
   const hasReferenceImages = Array.isArray(params.referenceImages) && params.referenceImages.length > 0
   const finalPrompt = params.type === 'character'
     ? buildPrompt({

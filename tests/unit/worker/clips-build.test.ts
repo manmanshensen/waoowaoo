@@ -85,7 +85,7 @@ describe('worker clips-build behavior', () => {
   beforeEach(() => {
     vi.clearAllMocks()
 
-    prismaMock.project.findUnique.mockResolvedValue({ id: 'project-1', mode: 'novel-promotion' })
+    prismaMock.project.findUnique.mockResolvedValue({ id: 'project-1' })
 
     prismaMock.novelPromotionProject.findUnique.mockResolvedValue({
       id: 'np-project-1',

@@ -82,7 +82,7 @@ describe('worker voice-analyze behavior', () => {
     txState.createdRows = []
     txState.deletedWhereClauses = []
 
-    prismaMock.project.findUnique.mockResolvedValue({ id: 'project-1', mode: 'novel-promotion' })
+    prismaMock.project.findUnique.mockResolvedValue({ id: 'project-1' })
     prismaMock.novelPromotionProject.findUnique.mockResolvedValue({
       id: 'np-project-1',
       analysisModel: 'llm::analysis-1',

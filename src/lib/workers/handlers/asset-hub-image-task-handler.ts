@@ -5,6 +5,7 @@ import { type TaskJobData } from '@/lib/task/types'
 import { encodeImageUrls } from '@/lib/contracts/image-urls-contract'
 import { normalizeImageGenerationCount } from '@/lib/image-generation/count'
 import { PRIMARY_APPEARANCE_INDEX } from '@/lib/constants'
+import { buildLocationImagePromptCore } from '@/lib/location-image-prompt'
 import {
   assertTaskActive,
   getUserModels,
@@ -32,6 +33,7 @@ interface GlobalCharacterRecord {
 interface GlobalLocationImageRecord {
   id: string
   description: string | null
+  availableSlots?: string | null
 }
 
 interface GlobalLocationRecord {
@@ -140,7 +142,12 @@ export async function handleAssetHubImageTask(job: Job<TaskJobData>) {
 
     for (const image of targetImages) {
       if (!image.description) continue
-      const prompt = artStyle ? `${addLocationPromptSuffix(image.description)}，${artStyle}` : addLocationPromptSuffix(image.description)
+      const promptCore = buildLocationImagePromptCore({
+        description: image.description,
+        availableSlotsRaw: image.availableSlots,
+        locale: job.data.locale === 'en' ? 'en' : 'zh',
+      })
+      const prompt = artStyle ? `${addLocationPromptSuffix(promptCore)}，${artStyle}` : addLocationPromptSuffix(promptCore)
 
       const cosKey = await generateLabeledImageToCos({
         job,

@@ -60,6 +60,7 @@ export const TASK_TYPE = {
   SCREENPLAY_CONVERT: 'screenplay_convert',
   VOICE_ANALYZE: 'voice_analyze',
   ANALYZE_GLOBAL: 'analyze_global',
+  AI_STORY_EXPAND: 'ai_story_expand',
   AI_MODIFY_APPEARANCE: 'ai_modify_appearance',
   AI_MODIFY_LOCATION: 'ai_modify_location',
   AI_MODIFY_SHOT_PROMPT: 'ai_modify_shot_prompt',

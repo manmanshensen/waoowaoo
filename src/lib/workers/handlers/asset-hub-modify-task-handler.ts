@@ -14,6 +14,10 @@ import {
   normalizeReferenceImagesForGeneration,
 } from '@/lib/media/outbound-image'
 import {
+  type LocationAvailableSlot,
+  stringifyLocationAvailableSlots,
+} from '@/lib/location-available-slots'
+import {
   AnyObj,
   parseImageUrls,
 } from './image-task-handler-shared'
@@ -51,6 +55,7 @@ interface GlobalLocationImageRecord {
   id: string
   imageIndex: number
   description: string | null
+  availableSlots?: string | null
   imageUrl: string | null
   previousDescription: string | null
 }
@@ -166,7 +171,7 @@ export async function handleAssetHubModifyTask(job: Job<TaskJobData>) {
           descriptions: appearance.descriptions,
           fallbackDescription: appearance.description,
           index: targetImageIndex,
-          nextDescription,
+          nextDescription: nextDescription.prompt,
         })
       } catch (err) {
         logger.warn({ message: '资产库角色描述同步失败', details: { error: String(err) } })
@@ -231,7 +236,10 @@ export async function handleAssetHubModifyTask(job: Job<TaskJobData>) {
     const labeled = await withLabelBar(source, location.name)
     const cosKey = await uploadImageSourceToCos(labeled, 'global-location-modify', locationImage.id)
 
-    let extractedDescription: string | undefined
+    let extractedDescription: {
+      prompt: string
+      availableSlots: LocationAvailableSlot[]
+    } | null = null
     if (locationImage.description && modifyInstruction && userModels.analysisModel) {
       try {
         extractedDescription = await generateModifiedAssetDescription({
@@ -256,7 +264,10 @@ export async function handleAssetHubModifyTask(job: Job<TaskJobData>) {
         previousImageUrl: locationImage.imageUrl,
         previousDescription: locationImage.description || null,
         imageUrl: cosKey,
-        ...(extractedDescription ? { description: extractedDescription } : {}),
+        ...(extractedDescription ? {
+          description: extractedDescription.prompt,
+          availableSlots: stringifyLocationAvailableSlots(extractedDescription.availableSlots),
+        } : {}),
       },
     })
 
