@@ -258,12 +258,14 @@ model NovelPromotionProject {
   characterModel  String? // 用户配置的角色图片模型
   locationModel   String? // 用户配置的场景图片模型
   storyboardModel String? // 用户配置的分镜图片模型
+  combinedStoryboardModel String? // 用户配置的合并分镜图片模型
   editModel       String? // 用户配置的修图/编辑模型
   videoResolution String                    @default("720p")
   capabilityOverrides String?              @db.Text
   workflowMode    String                    @default("srt")
   lastEpisodeId   String?
   imageResolution String                    @default("2K")
+  combinedStoryboardResolution String       @default("4K")
   importStatus    String?
   characters      NovelPromotionCharacter[]
   episodes        NovelPromotionEpisode[]
@@ -435,6 +437,7 @@ model UserPreference {
   characterModel  String? // 用户配置的角色图片模型
   locationModel   String? // 用户配置的场景图片模型
   storyboardModel String? // 用户配置的分镜图片模型
+  combinedStoryboardModel String? // 用户配置的合并分镜图片模型
   editModel       String? // 用户配置的修图模型
   videoModel      String? // 用户配置的视频模型
   audioModel      String? // 用户配置的语音模型
@@ -450,6 +453,7 @@ model UserPreference {
   createdAt       DateTime @default(now())
   updatedAt       DateTime @default(now()) @updatedAt
   imageResolution String   @default("2K")
+  combinedStoryboardResolution String @default("4K")
   capabilityDefaults String? @db.Text
 
   // API Key 配置（极简版）

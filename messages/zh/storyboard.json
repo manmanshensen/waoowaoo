@@ -60,6 +60,7 @@
         "panelsCount": "{count} 个镜头",
         "generatingStatus": "({count} 个生成中)",
         "generateAllPanels": "生成所有镜头",
+        "generatePanelGroups": "合并生成",
         "generatePendingPanels": "生成{count}个未有图片的镜头",
         "downloadAll": "下载全部",
         "downloading": "打包中...",

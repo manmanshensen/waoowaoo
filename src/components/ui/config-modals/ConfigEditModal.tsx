@@ -47,6 +47,8 @@ interface SettingsModalProps {
     characterModel?: string
     locationModel?: string
     imageModel?: string
+    combinedStoryboardModel?: string
+    combinedStoryboardResolution?: string
     editModel?: string
 
     videoModel?: string
@@ -59,6 +61,8 @@ interface SettingsModalProps {
     onCharacterModelChange?: (value: string) => void
     onLocationModelChange?: (value: string) => void
     onImageModelChange?: (value: string) => void
+    onCombinedStoryboardModelChange?: (value: string) => void
+    onCombinedStoryboardResolutionChange?: (value: string) => void
     onEditModelChange?: (value: string) => void
 
     onVideoModelChange?: (value: string) => void
@@ -132,6 +136,8 @@ export function SettingsModal({
     characterModel,
     locationModel,
     imageModel,
+    combinedStoryboardModel,
+    combinedStoryboardResolution = '4K',
     editModel,
     videoModel,
     audioModel,
@@ -143,6 +149,8 @@ export function SettingsModal({
     onCharacterModelChange,
     onLocationModelChange,
     onImageModelChange,
+    onCombinedStoryboardModelChange,
+    onCombinedStoryboardResolutionChange,
     onEditModelChange,
     onVideoModelChange,
     onAudioModelChange,
@@ -204,6 +212,10 @@ export function SettingsModal({
         () => userModels.image.find((model) => model.value === editModel) || null,
         [userModels.image, editModel],
     )
+    const selectedCombinedStoryboardModelOption = useMemo(
+        () => userModels.image.find((model) => model.value === combinedStoryboardModel) || null,
+        [combinedStoryboardModel, userModels.image],
+    )
     const characterCapabilityFields = useMemo(
         () => extractCapabilityFields(selectedCharacterModelOption?.capabilities, 'image'),
         [selectedCharacterModelOption],
@@ -220,6 +232,11 @@ export function SettingsModal({
         () => extractCapabilityFields(selectedEditModelOption?.capabilities, 'image'),
         [selectedEditModelOption],
     )
+    const combinedStoryboardResolutionOptions = useMemo(() => {
+        const options = selectedCombinedStoryboardModelOption?.capabilities?.image?.resolutionOptions
+        if (Array.isArray(options) && options.length > 0) return options
+        return ['1K', '2K', '4K']
+    }, [selectedCombinedStoryboardModelOption])
 
     const selectedVideoOverrides = useMemo<Record<string, CapabilityValue>>(() => {
         return readCapabilitySelectionForModel(capabilityOverrides, videoModel)
@@ -323,6 +340,20 @@ export function SettingsModal({
 
     const handleChange = (callback?: (value: string) => void) => (value: string) => {
         callback?.(value)
+        showSaved()
+    }
+
+    const handleCombinedStoryboardModelChange = (value: string) => {
+        onCombinedStoryboardModelChange?.(value)
+        const nextModel = userModels.image.find((model) => model.value === value)
+        const supportedResolutions = nextModel?.capabilities?.image?.resolutionOptions
+        if (
+            Array.isArray(supportedResolutions)
+            && supportedResolutions.length > 0
+            && !supportedResolutions.includes(combinedStoryboardResolution)
+        ) {
+            onCombinedStoryboardResolutionChange?.(supportedResolutions[0])
+        }
         showSaved()
     }
 
@@ -452,6 +483,36 @@ export function SettingsModal({
                                         applyCapabilityOverride(imageModel, field, rawValue, sample)
                                     }}
                                 />
+                            </div>
+
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium text-[var(--glass-text-secondary)]">{t('combinedStoryboardModel')}</label>
+                                <ModelCapabilityDropdown
+                                    models={userModels.image}
+                                    value={combinedStoryboardModel}
+                                    onModelChange={handleCombinedStoryboardModelChange}
+                                    capabilityFields={[]}
+                                    placementMode="downward"
+                                    capabilityOverrides={{}}
+                                    onCapabilityChange={() => undefined}
+                                    placeholder={t('pleaseSelect')}
+                                />
+                            </div>
+
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium text-[var(--glass-text-secondary)]">{t('combinedStoryboardResolution')}</label>
+                                <select
+                                    value={combinedStoryboardResolution}
+                                    onChange={(event) => handleChange(onCombinedStoryboardResolutionChange)(event.target.value)}
+                                    className="w-full rounded-2xl border border-[var(--glass-border)] bg-[var(--glass-surface)] px-3 py-2 text-sm text-[var(--glass-text-primary)] outline-none"
+                                >
+                                    {combinedStoryboardResolutionOptions.map((option) => (
+                                        <option key={option} value={option}>
+                                            {option}
+                                        </option>
+                                    ))}
+                                </select>
+                                <p className="text-xs text-[var(--glass-text-tertiary)]">{t('combinedStoryboardResolutionHint')}</p>
                             </div>
 
                             <div className="space-y-2">

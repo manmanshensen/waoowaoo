@@ -20,6 +20,7 @@ const MODEL_FIELDS = [
   'characterModel',
   'locationModel',
   'storyboardModel',
+  'combinedStoryboardModel',
   'editModel',
   'videoModel',
   'audioModel',
@@ -30,6 +31,7 @@ const MODEL_FIELD_TO_TYPE: Record<typeof MODEL_FIELDS[number], UnifiedModelType>
   characterModel: 'image',
   locationModel: 'image',
   storyboardModel: 'image',
+  combinedStoryboardModel: 'image',
   editModel: 'image',
   videoModel: 'video',
   audioModel: 'audio',
@@ -138,6 +140,7 @@ function getNextProjectModelMap(
     characterModel: string | null
     locationModel: string | null
     storyboardModel: string | null
+    combinedStoryboardModel: string | null
     editModel: string | null
     videoModel: string | null
     audioModel: string | null
@@ -239,6 +242,7 @@ export const GET = apiHandler(async (
       characterModel: true,
       locationModel: true,
       storyboardModel: true,
+      combinedStoryboardModel: true,
       editModel: true,
       videoModel: true,
       audioModel: true,
@@ -251,6 +255,7 @@ export const GET = apiHandler(async (
       characterModel: projectData.characterModel,
       locationModel: projectData.locationModel,
       storyboardModel: projectData.storyboardModel,
+      combinedStoryboardModel: projectData.combinedStoryboardModel,
       editModel: projectData.editModel,
       videoModel: projectData.videoModel,
       audioModel: projectData.audioModel,
@@ -283,6 +288,7 @@ export const PATCH = apiHandler(async (
       characterModel: true,
       locationModel: true,
       storyboardModel: true,
+      combinedStoryboardModel: true,
       editModel: true,
       videoModel: true,
       audioModel: true,
@@ -292,9 +298,9 @@ export const PATCH = apiHandler(async (
   }
 
   const allowedProjectFields = [
-    'analysisModel', 'characterModel', 'locationModel', 'storyboardModel',
+    'analysisModel', 'characterModel', 'locationModel', 'storyboardModel', 'combinedStoryboardModel',
     'editModel', 'videoModel', 'audioModel', 'videoRatio', 'artStyle',
-    'ttsRate', 'lipSyncEnabled', 'lipSyncMode', 'capabilityOverrides',
+    'ttsRate', 'lipSyncEnabled', 'lipSyncMode', 'capabilityOverrides', 'combinedStoryboardResolution',
   ] as const
 
   const updateData: Record<string, unknown> = {}

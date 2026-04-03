@@ -120,7 +120,9 @@ export default function StoryboardStage({
     transitioningState,
     runningCount,
     pendingPanelCount,
+    pendingGroupCount,
     handleGenerateAllPanels,
+    handleGeneratePanelGroups,
   } = controller
 
   const modalRuntime = useStoryboardModalRuntime({
@@ -201,11 +203,13 @@ export default function StoryboardStage({
           isDownloadingImages={isDownloadingImages}
           runningCount={runningCount}
           pendingPanelCount={pendingPanelCount}
+          pendingGroupCount={pendingGroupCount}
           isBatchSubmitting={isEpisodeBatchSubmitting}
           addingStoryboardGroup={addingStoryboardGroup}
           addingStoryboardGroupState={addingStoryboardGroupState}
           onDownloadAllImages={downloadAllImages}
           onGenerateAllPanels={handleGenerateAllPanels}
+          onGeneratePanelGroups={handleGeneratePanelGroups}
           onAddStoryboardGroupAtStart={() => addStoryboardGroup(0)}
           onBack={onBack}
         />

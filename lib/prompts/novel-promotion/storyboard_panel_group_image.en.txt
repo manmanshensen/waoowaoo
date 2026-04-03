@@ -1,0 +1,31 @@
+You are a professional storyboard artist. Generate one multi-panel storyboard sheet from the provided consecutive panels.
+
+[Top priority]
+- Output exactly one combined image using the required {layout} layout
+- Each cell must contain exactly one shot
+- Do not merge, skip, or misalign cells
+- No text, numbers, speech bubbles, watermarks, or decorative labels
+- Keep the grid stable and easy to split evenly afterward
+
+[Layout rules]
+- Every cell must have the same size
+- Keep separators simple and readable
+- Main subjects must stay inside their own cells
+- The image must remain suitable for fixed-grid cropping
+
+[Continuity rules]
+- Keep character appearance, costume, hairstyle, and facial features consistent
+- Keep environment, lighting, time, and mood coherent across cells
+- Show natural shot-to-shot progression
+- Avoid axis jumps and broken spatial relationships
+
+[Aspect ratio]
+- The target shot ratio for each cell is {aspect_ratio}
+- The final image should prioritize clean fixed-grid splitting
+
+[Style]
+- Visual style: {style}
+- Keep line work, shading, color treatment, and atmosphere consistent across all cells
+
+[Panel group data]
+{panel_group_json_input}

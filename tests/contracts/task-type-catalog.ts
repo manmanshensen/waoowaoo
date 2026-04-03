@@ -10,6 +10,7 @@ export type TaskTypeCoverageEntry = {
 
 const TASK_TYPE_OWNER_MAP = {
   [TASK_TYPE.IMAGE_PANEL]: 'tests/unit/worker/panel-image-task-handler.test.ts',
+  [TASK_TYPE.IMAGE_PANEL_GROUP]: 'tests/unit/worker/panel-group-image-task-handler.test.ts',
   [TASK_TYPE.IMAGE_CHARACTER]: 'tests/unit/worker/character-image-task-handler.test.ts',
   [TASK_TYPE.IMAGE_LOCATION]: 'tests/unit/worker/location-image-task-handler.test.ts',
   [TASK_TYPE.VIDEO_PANEL]: 'tests/unit/worker/video-worker.test.ts',

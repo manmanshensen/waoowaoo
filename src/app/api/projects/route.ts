@@ -230,10 +230,12 @@ export const POST = apiHandler(async (request: NextRequest) => {
         characterModel: userPreference.characterModel,
         locationModel: userPreference.locationModel,
         storyboardModel: userPreference.storyboardModel,
+        combinedStoryboardModel: userPreference.combinedStoryboardModel,
         editModel: userPreference.editModel,
         videoModel: userPreference.videoModel,
         audioModel: userPreference.audioModel,
         videoRatio: userPreference.videoRatio,
+        combinedStoryboardResolution: userPreference.combinedStoryboardResolution,
         artStyle: isArtStyleValue(userPreference.artStyle) ? userPreference.artStyle : 'american-comic',
         ttsRate: userPreference.ttsRate
       })

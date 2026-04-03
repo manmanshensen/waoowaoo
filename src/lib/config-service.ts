@@ -102,6 +102,8 @@ export interface ProjectModelConfig {
   characterModel: string | null
   locationModel: string | null
   storyboardModel: string | null
+  combinedStoryboardModel: string | null
+  combinedStoryboardResolution: string | null
   editModel: string | null
   videoModel: string | null
   audioModel: string | null
@@ -116,6 +118,8 @@ export interface UserModelConfig {
   characterModel: string | null
   locationModel: string | null
   storyboardModel: string | null
+  combinedStoryboardModel: string | null
+  combinedStoryboardResolution: string | null
   editModel: string | null
   videoModel: string | null
   audioModel: string | null
@@ -158,6 +162,10 @@ export async function getProjectModelConfig(
     characterModel: extractModelKey(projectData?.characterModel) || null,
     locationModel: extractModelKey(projectData?.locationModel) || null,
     storyboardModel: extractModelKey(projectData?.storyboardModel) || null,
+    combinedStoryboardModel: extractModelKey(projectData?.combinedStoryboardModel)
+      || extractModelKey(projectData?.storyboardModel)
+      || null,
+    combinedStoryboardResolution: projectData?.combinedStoryboardResolution || '4K',
     editModel: extractModelKey(projectData?.editModel) || null,
     videoModel: extractModelKey(projectData?.videoModel) || null,
     audioModel: extractModelKey(projectData?.audioModel) || extractModelKey(userPref?.audioModel) || null,
@@ -181,6 +189,10 @@ export async function getUserModelConfig(userId: string): Promise<UserModelConfi
     characterModel: extractModelKey(userPref?.characterModel) || null,
     locationModel: extractModelKey(userPref?.locationModel) || null,
     storyboardModel: extractModelKey(userPref?.storyboardModel) || null,
+    combinedStoryboardModel: extractModelKey(userPref?.combinedStoryboardModel)
+      || extractModelKey(userPref?.storyboardModel)
+      || null,
+    combinedStoryboardResolution: userPref?.combinedStoryboardResolution || '4K',
     editModel: extractModelKey(userPref?.editModel) || null,
     videoModel: extractModelKey(userPref?.videoModel) || null,
     audioModel: extractModelKey(userPref?.audioModel) || null,

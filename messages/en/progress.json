@@ -44,6 +44,7 @@
   "taskType": {
     "generic": "Task",
     "imagePanel": "Storyboard image",
+    "imagePanelGroup": "Combined storyboard image",
     "imageCharacter": "Character image",
     "imageLocation": "Location image",
     "videoPanel": "Video generation",
@@ -87,7 +88,9 @@
     "generateCharacterImage": "Generate character image",
     "generateLocationImage": "Generate location image",
     "generatePanelCandidate": "Generate panel candidate",
+    "generatePanelGroup": "Generate combined storyboard image",
     "generatePanelVideo": "Generate panel video",
+    "splitPanelGroup": "Split combined storyboard image",
     "generateVoiceSubmit": "Submit voice task",
     "generateVoicePersist": "Persist voice result",
     "voiceDesignSubmit": "Submit voice design task",

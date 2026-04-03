@@ -45,6 +45,8 @@ interface WorkspaceHeaderShellProps {
   characterModel: string | null | undefined
   locationModel: string | null | undefined
   storyboardModel: string | null | undefined
+  combinedStoryboardModel: string | null | undefined
+  combinedStoryboardResolution: string | null | undefined
   editModel: string | null | undefined
   videoModel: string | null | undefined
   audioModel: string | null | undefined
@@ -92,6 +94,8 @@ export default function WorkspaceHeaderShell({
   characterModel,
   locationModel,
   storyboardModel,
+  combinedStoryboardModel,
+  combinedStoryboardResolution,
   editModel,
   videoModel,
   audioModel,
@@ -131,6 +135,8 @@ export default function WorkspaceHeaderShell({
         characterModel={characterModel ?? undefined}
         locationModel={locationModel ?? undefined}
         imageModel={storyboardModel ?? undefined}
+        combinedStoryboardModel={combinedStoryboardModel ?? undefined}
+        combinedStoryboardResolution={combinedStoryboardResolution ?? undefined}
         editModel={editModel ?? undefined}
         videoModel={videoModel ?? undefined}
         audioModel={audioModel ?? undefined}
@@ -142,6 +148,8 @@ export default function WorkspaceHeaderShell({
         onCharacterModelChange={(value) => { onUpdateConfig('characterModel', value) }}
         onLocationModelChange={(value) => { onUpdateConfig('locationModel', value) }}
         onImageModelChange={(value) => { onUpdateConfig('storyboardModel', value) }}
+        onCombinedStoryboardModelChange={(value) => { onUpdateConfig('combinedStoryboardModel', value) }}
+        onCombinedStoryboardResolutionChange={(value) => { onUpdateConfig('combinedStoryboardResolution', value) }}
         onEditModelChange={(value) => { onUpdateConfig('editModel', value) }}
         onVideoModelChange={(value) => { onUpdateConfig('videoModel', value) }}
         onAudioModelChange={(value) => { onUpdateConfig('audioModel', value) }}

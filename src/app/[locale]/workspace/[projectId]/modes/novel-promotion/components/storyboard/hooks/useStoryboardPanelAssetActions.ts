@@ -23,6 +23,7 @@ interface UseStoryboardPanelAssetActionsProps {
   updatePanelEdit: (panelId: string, panel: StoryboardPanel, updates: Partial<PanelEditData>) => void
   debouncedSave: (panelId: string, storyboardId: string) => void
   regeneratePanelImage: (panelId: string, count?: number, force?: boolean) => Promise<void>
+  regeneratePanelGroupImages: (panelIds: string[]) => Promise<void>
   modifyPanelImage: (
     storyboardId: string,
     panelIndex: number,
@@ -73,6 +74,7 @@ export function useStoryboardPanelAssetActions({
   updatePanelEdit,
   debouncedSave,
   regeneratePanelImage,
+  regeneratePanelGroupImages,
   modifyPanelImage,
   addCharacterToPanel,
   removeCharacterFromPanel,
@@ -166,12 +168,13 @@ export function useStoryboardPanelAssetActions({
     },
     [setPanelLocation, updatePanelEdit],
   )
-  const { runningCount, pendingPanelCount, handleGenerateAllPanels } =
+  const { runningCount, pendingPanelCount, pendingGroupCount, handleGenerateAllPanels, handleGeneratePanelGroups } =
     useStoryboardBatchPanelGeneration({
       sortedStoryboards,
       submittingPanelImageIds,
       getTextPanels,
       regeneratePanelImage,
+      regeneratePanelGroupImages,
       setIsEpisodeBatchSubmitting,
     })
 
@@ -185,6 +188,8 @@ export function useStoryboardPanelAssetActions({
     handleRemoveLocation,
     runningCount,
     pendingPanelCount,
+    pendingGroupCount,
     handleGenerateAllPanels,
+    handleGeneratePanelGroups,
   }
 }

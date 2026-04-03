@@ -15,6 +15,7 @@ type AnyPayload = Record<string, unknown> | null | undefined
 
 const BILLABLE_TASK_TYPES = new Set<TaskType>([
   TASK_TYPE.IMAGE_PANEL,
+  TASK_TYPE.IMAGE_PANEL_GROUP,
   TASK_TYPE.IMAGE_CHARACTER,
   TASK_TYPE.IMAGE_LOCATION,
   TASK_TYPE.VIDEO_PANEL,
@@ -242,6 +243,7 @@ export function buildDefaultTaskBillingInfo(taskType: TaskType, payload: AnyPayl
 
   switch (taskType) {
     case TASK_TYPE.IMAGE_PANEL:
+    case TASK_TYPE.IMAGE_PANEL_GROUP:
     case TASK_TYPE.IMAGE_CHARACTER:
     case TASK_TYPE.IMAGE_LOCATION:
     case TASK_TYPE.MODIFY_ASSET_IMAGE:
