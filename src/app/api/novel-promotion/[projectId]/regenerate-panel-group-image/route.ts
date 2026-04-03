@@ -1,3 +1,4 @@
+import { createHash } from 'crypto'
 import { NextRequest, NextResponse } from 'next/server'
 import { requireProjectAuthLight, isErrorResponse } from '@/lib/api-auth'
 import { apiHandler, ApiError, getRequestId } from '@/lib/api-errors'
@@ -124,6 +125,10 @@ export const POST = apiHandler(async (
     resolution,
     generationOptions,
   }
+  const dedupeDigest = createHash('sha1')
+    .update(`${projectId}:${storyboardId}:${panelIds.join(',')}:${resolution}`)
+    .digest('hex')
+    .slice(0, 16)
 
   const result = await submitTask({
     userId: session.user.id,
@@ -134,7 +139,7 @@ export const POST = apiHandler(async (
     targetType: 'NovelPromotionPanel',
     targetId: panels[0].id,
     payload,
-    dedupeKey: `image_panel_group:${storyboardId}:${panelIds.join(',')}:${resolution}`,
+    dedupeKey: `image_panel_group:${dedupeDigest}`,
     billingInfo: buildDefaultTaskBillingInfo(TASK_TYPE.IMAGE_PANEL_GROUP, payload),
   })
 

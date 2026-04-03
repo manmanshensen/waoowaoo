@@ -632,4 +632,23 @@ describe('api contract - direct submit routes (behavior)', () => {
       }
     })
   }
+
+  it('regenerate-panel-group-image -> hashes dedupeKey for 9-panel groups', async () => {
+    const routeCase = DIRECT_CASES.find(
+      (item) => item.routeFile === 'src/app/api/novel-promotion/[projectId]/regenerate-panel-group-image/route.ts',
+    )
+    expect(routeCase).toBeDefined()
+
+    const res = await invokePostRoute({
+      ...routeCase!,
+      body: {
+        panelIds: Array.from({ length: 9 }, (_, index) => `panel-${index + 1}-${'x'.repeat(48)}`),
+      },
+    })
+
+    expect(res.status).toBe(200)
+    const submitArg = submitTaskMock.mock.calls.at(-1)?.[0] as Record<string, unknown> | undefined
+    expect(submitArg?.dedupeKey).toMatch(/^image_panel_group:[0-9a-f]{16}$/)
+    expect((submitArg?.dedupeKey as string | undefined)?.length).toBeLessThanOrEqual(191)
+  })
 })
