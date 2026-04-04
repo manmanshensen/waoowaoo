@@ -21,6 +21,9 @@ const MODEL_FIELDS = [
   'locationModel',
   'storyboardModel',
   'combinedStoryboardModel',
+  'combinedStoryboard1x1Model',
+  'combinedStoryboard2x2Model',
+  'combinedStoryboard3x3Model',
   'editModel',
   'videoModel',
   'audioModel',
@@ -32,6 +35,9 @@ const MODEL_FIELD_TO_TYPE: Record<typeof MODEL_FIELDS[number], UnifiedModelType>
   locationModel: 'image',
   storyboardModel: 'image',
   combinedStoryboardModel: 'image',
+  combinedStoryboard1x1Model: 'image',
+  combinedStoryboard2x2Model: 'image',
+  combinedStoryboard3x3Model: 'image',
   editModel: 'image',
   videoModel: 'video',
   audioModel: 'audio',
@@ -141,6 +147,9 @@ function getNextProjectModelMap(
     locationModel: string | null
     storyboardModel: string | null
     combinedStoryboardModel: string | null
+    combinedStoryboard1x1Model: string | null
+    combinedStoryboard2x2Model: string | null
+    combinedStoryboard3x3Model: string | null
     editModel: string | null
     videoModel: string | null
     audioModel: string | null
@@ -243,6 +252,9 @@ export const GET = apiHandler(async (
       locationModel: true,
       storyboardModel: true,
       combinedStoryboardModel: true,
+      combinedStoryboard1x1Model: true,
+      combinedStoryboard2x2Model: true,
+      combinedStoryboard3x3Model: true,
       editModel: true,
       videoModel: true,
       audioModel: true,
@@ -256,6 +268,9 @@ export const GET = apiHandler(async (
       locationModel: projectData.locationModel,
       storyboardModel: projectData.storyboardModel,
       combinedStoryboardModel: projectData.combinedStoryboardModel,
+      combinedStoryboard1x1Model: projectData.combinedStoryboard1x1Model,
+      combinedStoryboard2x2Model: projectData.combinedStoryboard2x2Model,
+      combinedStoryboard3x3Model: projectData.combinedStoryboard3x3Model,
       editModel: projectData.editModel,
       videoModel: projectData.videoModel,
       audioModel: projectData.audioModel,
@@ -289,6 +304,9 @@ export const PATCH = apiHandler(async (
       locationModel: true,
       storyboardModel: true,
       combinedStoryboardModel: true,
+      combinedStoryboard1x1Model: true,
+      combinedStoryboard2x2Model: true,
+      combinedStoryboard3x3Model: true,
       editModel: true,
       videoModel: true,
       audioModel: true,
@@ -299,8 +317,10 @@ export const PATCH = apiHandler(async (
 
   const allowedProjectFields = [
     'analysisModel', 'characterModel', 'locationModel', 'storyboardModel', 'combinedStoryboardModel',
+    'combinedStoryboard1x1Model', 'combinedStoryboard2x2Model', 'combinedStoryboard3x3Model',
     'editModel', 'videoModel', 'audioModel', 'videoRatio', 'artStyle',
     'ttsRate', 'lipSyncEnabled', 'lipSyncMode', 'capabilityOverrides', 'combinedStoryboardResolution',
+    'combinedStoryboard1x1Resolution', 'combinedStoryboard2x2Resolution', 'combinedStoryboard3x3Resolution',
   ] as const
 
   const updateData: Record<string, unknown> = {}

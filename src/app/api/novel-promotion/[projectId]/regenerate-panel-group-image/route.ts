@@ -3,7 +3,11 @@ import { NextRequest, NextResponse } from 'next/server'
 import { requireProjectAuthLight, isErrorResponse } from '@/lib/api-auth'
 import { apiHandler, ApiError, getRequestId } from '@/lib/api-errors'
 import { buildDefaultTaskBillingInfo } from '@/lib/billing'
-import { getProjectModelConfig, resolveProjectModelCapabilityGenerationOptions } from '@/lib/config-service'
+import {
+  getCombinedStoryboardConfigForPanelCount,
+  getProjectModelConfig,
+  resolveProjectModelCapabilityGenerationOptions,
+} from '@/lib/config-service'
 import { prisma } from '@/lib/prisma'
 import { submitTask } from '@/lib/task/submitter'
 import { resolveRequiredTaskLocale } from '@/lib/task/resolve-locale'
@@ -83,8 +87,9 @@ export const POST = apiHandler(async (
   }
 
   const projectModelConfig = await getProjectModelConfig(projectId, session.user.id)
-  const imageModel = projectModelConfig.combinedStoryboardModel || projectModelConfig.storyboardModel
-  const resolution = projectModelConfig.combinedStoryboardResolution || '4K'
+  const combinedConfig = getCombinedStoryboardConfigForPanelCount(projectModelConfig, panelIds.length)
+  const imageModel = combinedConfig.model
+  const resolution = combinedConfig.resolution
 
   if (!imageModel) {
     throw new ApiError('INVALID_PARAMS', {

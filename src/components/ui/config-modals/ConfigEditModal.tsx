@@ -47,8 +47,12 @@ interface SettingsModalProps {
     characterModel?: string
     locationModel?: string
     imageModel?: string
-    combinedStoryboardModel?: string
-    combinedStoryboardResolution?: string
+    combinedStoryboard1x1Model?: string
+    combinedStoryboard2x2Model?: string
+    combinedStoryboard3x3Model?: string
+    combinedStoryboard1x1Resolution?: string
+    combinedStoryboard2x2Resolution?: string
+    combinedStoryboard3x3Resolution?: string
     editModel?: string
 
     videoModel?: string
@@ -61,8 +65,12 @@ interface SettingsModalProps {
     onCharacterModelChange?: (value: string) => void
     onLocationModelChange?: (value: string) => void
     onImageModelChange?: (value: string) => void
-    onCombinedStoryboardModelChange?: (value: string) => void
-    onCombinedStoryboardResolutionChange?: (value: string) => void
+    onCombinedStoryboard1x1ModelChange?: (value: string) => void
+    onCombinedStoryboard2x2ModelChange?: (value: string) => void
+    onCombinedStoryboard3x3ModelChange?: (value: string) => void
+    onCombinedStoryboard1x1ResolutionChange?: (value: string) => void
+    onCombinedStoryboard2x2ResolutionChange?: (value: string) => void
+    onCombinedStoryboard3x3ResolutionChange?: (value: string) => void
     onEditModelChange?: (value: string) => void
 
     onVideoModelChange?: (value: string) => void
@@ -136,8 +144,12 @@ export function SettingsModal({
     characterModel,
     locationModel,
     imageModel,
-    combinedStoryboardModel,
-    combinedStoryboardResolution = '4K',
+    combinedStoryboard1x1Model,
+    combinedStoryboard2x2Model,
+    combinedStoryboard3x3Model,
+    combinedStoryboard1x1Resolution = '1K',
+    combinedStoryboard2x2Resolution = '2K',
+    combinedStoryboard3x3Resolution = '4K',
     editModel,
     videoModel,
     audioModel,
@@ -149,8 +161,12 @@ export function SettingsModal({
     onCharacterModelChange,
     onLocationModelChange,
     onImageModelChange,
-    onCombinedStoryboardModelChange,
-    onCombinedStoryboardResolutionChange,
+    onCombinedStoryboard1x1ModelChange,
+    onCombinedStoryboard2x2ModelChange,
+    onCombinedStoryboard3x3ModelChange,
+    onCombinedStoryboard1x1ResolutionChange,
+    onCombinedStoryboard2x2ResolutionChange,
+    onCombinedStoryboard3x3ResolutionChange,
     onEditModelChange,
     onVideoModelChange,
     onAudioModelChange,
@@ -212,9 +228,17 @@ export function SettingsModal({
         () => userModels.image.find((model) => model.value === editModel) || null,
         [userModels.image, editModel],
     )
-    const selectedCombinedStoryboardModelOption = useMemo(
-        () => userModels.image.find((model) => model.value === combinedStoryboardModel) || null,
-        [combinedStoryboardModel, userModels.image],
+    const selectedCombinedStoryboard1x1ModelOption = useMemo(
+        () => userModels.image.find((model) => model.value === combinedStoryboard1x1Model) || null,
+        [combinedStoryboard1x1Model, userModels.image],
+    )
+    const selectedCombinedStoryboard2x2ModelOption = useMemo(
+        () => userModels.image.find((model) => model.value === combinedStoryboard2x2Model) || null,
+        [combinedStoryboard2x2Model, userModels.image],
+    )
+    const selectedCombinedStoryboard3x3ModelOption = useMemo(
+        () => userModels.image.find((model) => model.value === combinedStoryboard3x3Model) || null,
+        [combinedStoryboard3x3Model, userModels.image],
     )
     const characterCapabilityFields = useMemo(
         () => extractCapabilityFields(selectedCharacterModelOption?.capabilities, 'image'),
@@ -232,11 +256,21 @@ export function SettingsModal({
         () => extractCapabilityFields(selectedEditModelOption?.capabilities, 'image'),
         [selectedEditModelOption],
     )
-    const combinedStoryboardResolutionOptions = useMemo(() => {
-        const options = selectedCombinedStoryboardModelOption?.capabilities?.image?.resolutionOptions
+    const combinedStoryboard1x1ResolutionOptions = useMemo(() => {
+        const options = selectedCombinedStoryboard1x1ModelOption?.capabilities?.image?.resolutionOptions
         if (Array.isArray(options) && options.length > 0) return options
         return ['1K', '2K', '4K']
-    }, [selectedCombinedStoryboardModelOption])
+    }, [selectedCombinedStoryboard1x1ModelOption])
+    const combinedStoryboard2x2ResolutionOptions = useMemo(() => {
+        const options = selectedCombinedStoryboard2x2ModelOption?.capabilities?.image?.resolutionOptions
+        if (Array.isArray(options) && options.length > 0) return options
+        return ['1K', '2K', '4K']
+    }, [selectedCombinedStoryboard2x2ModelOption])
+    const combinedStoryboard3x3ResolutionOptions = useMemo(() => {
+        const options = selectedCombinedStoryboard3x3ModelOption?.capabilities?.image?.resolutionOptions
+        if (Array.isArray(options) && options.length > 0) return options
+        return ['1K', '2K', '4K']
+    }, [selectedCombinedStoryboard3x3ModelOption])
 
     const selectedVideoOverrides = useMemo<Record<string, CapabilityValue>>(() => {
         return readCapabilitySelectionForModel(capabilityOverrides, videoModel)
@@ -343,16 +377,21 @@ export function SettingsModal({
         showSaved()
     }
 
-    const handleCombinedStoryboardModelChange = (value: string) => {
-        onCombinedStoryboardModelChange?.(value)
+    const handleCombinedLayoutModelChange = (
+        value: string,
+        currentResolution: string,
+        onModelChange?: (value: string) => void,
+        onResolutionChange?: (value: string) => void,
+    ) => {
+        onModelChange?.(value)
         const nextModel = userModels.image.find((model) => model.value === value)
         const supportedResolutions = nextModel?.capabilities?.image?.resolutionOptions
         if (
             Array.isArray(supportedResolutions)
             && supportedResolutions.length > 0
-            && !supportedResolutions.includes(combinedStoryboardResolution)
+            && !supportedResolutions.includes(currentResolution)
         ) {
-            onCombinedStoryboardResolutionChange?.(supportedResolutions[0])
+            onResolutionChange?.(supportedResolutions[0])
         }
         showSaved()
     }
@@ -485,34 +524,115 @@ export function SettingsModal({
                                 />
                             </div>
 
-                            <div className="space-y-2">
-                                <label className="text-sm font-medium text-[var(--glass-text-secondary)]">{t('combinedStoryboardModel')}</label>
-                                <ModelCapabilityDropdown
-                                    models={userModels.image}
-                                    value={combinedStoryboardModel}
-                                    onModelChange={handleCombinedStoryboardModelChange}
-                                    capabilityFields={[]}
-                                    placementMode="downward"
-                                    capabilityOverrides={{}}
-                                    onCapabilityChange={() => undefined}
-                                    placeholder={t('pleaseSelect')}
-                                />
-                            </div>
+                            <div className="space-y-4 md:col-span-2">
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium text-[var(--glass-text-secondary)]">{t('combinedStoryboardSettings')}</label>
+                                    <p className="text-xs text-[var(--glass-text-tertiary)]">{t('combinedStoryboardResolutionHint')}</p>
+                                </div>
 
-                            <div className="space-y-2">
-                                <label className="text-sm font-medium text-[var(--glass-text-secondary)]">{t('combinedStoryboardResolution')}</label>
-                                <select
-                                    value={combinedStoryboardResolution}
-                                    onChange={(event) => handleChange(onCombinedStoryboardResolutionChange)(event.target.value)}
-                                    className="w-full rounded-2xl border border-[var(--glass-border)] bg-[var(--glass-surface)] px-3 py-2 text-sm text-[var(--glass-text-primary)] outline-none"
-                                >
-                                    {combinedStoryboardResolutionOptions.map((option) => (
-                                        <option key={option} value={option}>
-                                            {option}
-                                        </option>
-                                    ))}
-                                </select>
-                                <p className="text-xs text-[var(--glass-text-tertiary)]">{t('combinedStoryboardResolutionHint')}</p>
+                                <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
+                                    <div className="glass-surface p-4 space-y-3">
+                                        <div className="text-sm font-semibold text-[var(--glass-text-primary)]">{t('combinedStoryboard1x1')}</div>
+                                        <div className="space-y-2">
+                                            <label className="text-xs font-medium text-[var(--glass-text-secondary)]">{t('combinedStoryboardModel')}</label>
+                                            <ModelCapabilityDropdown
+                                                models={userModels.image}
+                                                value={combinedStoryboard1x1Model}
+                                                onModelChange={(value) => handleCombinedLayoutModelChange(
+                                                    value,
+                                                    combinedStoryboard1x1Resolution,
+                                                    onCombinedStoryboard1x1ModelChange,
+                                                    onCombinedStoryboard1x1ResolutionChange,
+                                                )}
+                                                capabilityFields={[]}
+                                                placementMode="downward"
+                                                capabilityOverrides={{}}
+                                                onCapabilityChange={() => undefined}
+                                                placeholder={t('pleaseSelect')}
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="text-xs font-medium text-[var(--glass-text-secondary)]">{t('combinedStoryboardResolution')}</label>
+                                            <select
+                                                value={combinedStoryboard1x1Resolution}
+                                                onChange={(event) => handleChange(onCombinedStoryboard1x1ResolutionChange)(event.target.value)}
+                                                className="w-full rounded-2xl border border-[var(--glass-border)] bg-[var(--glass-surface)] px-3 py-2 text-sm text-[var(--glass-text-primary)] outline-none"
+                                            >
+                                                {combinedStoryboard1x1ResolutionOptions.map((option) => (
+                                                    <option key={option} value={option}>{option}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    <div className="glass-surface p-4 space-y-3">
+                                        <div className="text-sm font-semibold text-[var(--glass-text-primary)]">{t('combinedStoryboard2x2')}</div>
+                                        <div className="space-y-2">
+                                            <label className="text-xs font-medium text-[var(--glass-text-secondary)]">{t('combinedStoryboardModel')}</label>
+                                            <ModelCapabilityDropdown
+                                                models={userModels.image}
+                                                value={combinedStoryboard2x2Model}
+                                                onModelChange={(value) => handleCombinedLayoutModelChange(
+                                                    value,
+                                                    combinedStoryboard2x2Resolution,
+                                                    onCombinedStoryboard2x2ModelChange,
+                                                    onCombinedStoryboard2x2ResolutionChange,
+                                                )}
+                                                capabilityFields={[]}
+                                                placementMode="downward"
+                                                capabilityOverrides={{}}
+                                                onCapabilityChange={() => undefined}
+                                                placeholder={t('pleaseSelect')}
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="text-xs font-medium text-[var(--glass-text-secondary)]">{t('combinedStoryboardResolution')}</label>
+                                            <select
+                                                value={combinedStoryboard2x2Resolution}
+                                                onChange={(event) => handleChange(onCombinedStoryboard2x2ResolutionChange)(event.target.value)}
+                                                className="w-full rounded-2xl border border-[var(--glass-border)] bg-[var(--glass-surface)] px-3 py-2 text-sm text-[var(--glass-text-primary)] outline-none"
+                                            >
+                                                {combinedStoryboard2x2ResolutionOptions.map((option) => (
+                                                    <option key={option} value={option}>{option}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    <div className="glass-surface p-4 space-y-3">
+                                        <div className="text-sm font-semibold text-[var(--glass-text-primary)]">{t('combinedStoryboard3x3')}</div>
+                                        <div className="space-y-2">
+                                            <label className="text-xs font-medium text-[var(--glass-text-secondary)]">{t('combinedStoryboardModel')}</label>
+                                            <ModelCapabilityDropdown
+                                                models={userModels.image}
+                                                value={combinedStoryboard3x3Model}
+                                                onModelChange={(value) => handleCombinedLayoutModelChange(
+                                                    value,
+                                                    combinedStoryboard3x3Resolution,
+                                                    onCombinedStoryboard3x3ModelChange,
+                                                    onCombinedStoryboard3x3ResolutionChange,
+                                                )}
+                                                capabilityFields={[]}
+                                                placementMode="downward"
+                                                capabilityOverrides={{}}
+                                                onCapabilityChange={() => undefined}
+                                                placeholder={t('pleaseSelect')}
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="text-xs font-medium text-[var(--glass-text-secondary)]">{t('combinedStoryboardResolution')}</label>
+                                            <select
+                                                value={combinedStoryboard3x3Resolution}
+                                                onChange={(event) => handleChange(onCombinedStoryboard3x3ResolutionChange)(event.target.value)}
+                                                className="w-full rounded-2xl border border-[var(--glass-border)] bg-[var(--glass-surface)] px-3 py-2 text-sm text-[var(--glass-text-primary)] outline-none"
+                                            >
+                                                {combinedStoryboard3x3ResolutionOptions.map((option) => (
+                                                    <option key={option} value={option}>{option}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
 
                             <div className="space-y-2">

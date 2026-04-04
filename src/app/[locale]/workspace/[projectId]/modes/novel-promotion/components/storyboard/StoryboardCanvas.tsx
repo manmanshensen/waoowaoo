@@ -41,6 +41,8 @@ interface StoryboardCanvasProps {
   onAddPanel: (storyboardId: string) => Promise<void>
   onDeleteStoryboard: (storyboardId: string, panelCount: number) => Promise<void>
   onGenerateAllIndividually: (storyboardId: string) => Promise<void>
+  getPendingPanelGroupCount: (storyboardId: string) => number
+  onGeneratePanelGroupsForStoryboard: (storyboardId: string) => Promise<void>
   onPreviewImage: (url: string) => void
   onCloseStoryboardError: (storyboardId: string) => void
   onPanelUpdate: (panelId: string, panel: StoryboardPanel, updates: Partial<PanelEditData>) => void
@@ -109,6 +111,8 @@ export default function StoryboardCanvas({
   onAddPanel,
   onDeleteStoryboard,
   onGenerateAllIndividually,
+  getPendingPanelGroupCount,
+  onGeneratePanelGroupsForStoryboard,
   onPreviewImage,
   onCloseStoryboardError,
   onPanelUpdate,
@@ -185,6 +189,8 @@ export default function StoryboardCanvas({
               onAddPanel={() => onAddPanel(storyboard.id)}
               onDeleteStoryboard={() => onDeleteStoryboard(storyboard.id, textPanels.length)}
               onGenerateAllIndividually={() => onGenerateAllIndividually(storyboard.id)}
+              pendingGroupCount={getPendingPanelGroupCount(storyboard.id)}
+              onGeneratePanelGroups={() => onGeneratePanelGroupsForStoryboard(storyboard.id)}
               onPreviewImage={onPreviewImage}
               onCloseError={() => onCloseStoryboardError(storyboard.id)}
               getPanelEditData={getPanelEditData}

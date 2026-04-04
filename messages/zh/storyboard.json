@@ -45,6 +45,8 @@
         "aiAnalyzing": "AI 分析中...",
         "regenerateText": "重新生成文字",
         "generateMissingImages": "生成该片段所有未有图片的镜头",
+        "generateCombined": "合并生成",
+        "generateCombinedImages": "合并生成该片段所有未有图片的镜头",
         "segment": "片段",
         "addAtStart": "在开头添加新分镜组",
         "insertHere": "在此插入新分镜组"

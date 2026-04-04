@@ -121,8 +121,10 @@ export default function StoryboardStage({
     runningCount,
     pendingPanelCount,
     pendingGroupCount,
+    getPendingPanelGroupsForStoryboard,
     handleGenerateAllPanels,
     handleGeneratePanelGroups,
+    handleGenerateStoryboardPanelGroups,
   } = controller
 
   const modalRuntime = useStoryboardModalRuntime({
@@ -246,6 +248,8 @@ export default function StoryboardStage({
           onAddPanel={addPanel}
           onDeleteStoryboard={deleteStoryboard}
           onGenerateAllIndividually={regenerateAllPanelsIndividually}
+          getPendingPanelGroupCount={(storyboardId) => getPendingPanelGroupsForStoryboard(storyboardId).length}
+          onGeneratePanelGroupsForStoryboard={handleGenerateStoryboardPanelGroups}
           onPreviewImage={setPreviewImage}
           onCloseStoryboardError={clearStoryboardError}
           onPanelUpdate={handlePanelUpdate}

@@ -269,6 +269,9 @@ export async function requireProjectAuth<T extends ProjectAuthIncludes = Project
         locationModel?: string | null
         storyboardModel?: string | null
         combinedStoryboardModel?: string | null
+        combinedStoryboard1x1Model?: string | null
+        combinedStoryboard2x2Model?: string | null
+        combinedStoryboard3x3Model?: string | null
         editModel?: string | null
         videoModel?: string | null
         audioModel?: string | null
@@ -281,6 +284,9 @@ export async function requireProjectAuth<T extends ProjectAuthIncludes = Project
         locationModel: extractModelKey(rawNovelData.locationModel),
         storyboardModel: extractModelKey(rawNovelData.storyboardModel),
         combinedStoryboardModel: extractModelKey(rawNovelData.combinedStoryboardModel),
+        combinedStoryboard1x1Model: extractModelKey(rawNovelData.combinedStoryboard1x1Model),
+        combinedStoryboard2x2Model: extractModelKey(rawNovelData.combinedStoryboard2x2Model),
+        combinedStoryboard3x3Model: extractModelKey(rawNovelData.combinedStoryboard3x3Model),
         editModel: extractModelKey(rawNovelData.editModel),
         videoModel: extractModelKey(rawNovelData.videoModel),
         audioModel: extractModelKey(rawNovelData.audioModel),
