@@ -1,7 +1,7 @@
 import type { Job } from 'bullmq'
 import { executeAiTextStep } from '@/lib/ai-runtime'
 import { getUserModelConfig } from '@/lib/config-service'
-import { removeCharacterPromptSuffix, removeLocationPromptSuffix } from '@/lib/constants'
+import { removeCharacterPromptSuffix, removeLocationPromptSuffix, removePropPromptSuffix } from '@/lib/constants'
 import { withInternalLLMStreamCallbacks } from '@/lib/llm-observe/internal-stream-context'
 import { reportTaskProgress } from '@/lib/workers/shared'
 import { assertTaskActive } from '@/lib/workers/utils'
@@ -44,11 +44,12 @@ export async function handleAssetHubAIModifyTask(job: Job<TaskJobData>) {
 
   const isCharacter = job.data.type === TASK_TYPE.ASSET_HUB_AI_MODIFY_CHARACTER
   const isLocation = job.data.type === TASK_TYPE.ASSET_HUB_AI_MODIFY_LOCATION
-  if (!isCharacter && !isLocation) {
+  const isProp = job.data.type === TASK_TYPE.ASSET_HUB_AI_MODIFY_PROP
+  if (!isCharacter && !isLocation && !isProp) {
     throw new Error(`Unsupported task type: ${job.data.type}`)
   }
 
-  const targetIdField = isCharacter ? 'characterId' : 'locationId'
+  const targetIdField = isCharacter ? 'characterId' : isProp ? 'propId' : 'locationId'
   const targetId = readRequiredString(payload[targetIdField], targetIdField)
   const modifyInstruction = readRequiredString(payload.modifyInstruction, 'modifyInstruction')
   const currentDescriptionRaw = readRequiredString(payload.currentDescription, 'currentDescription')
@@ -62,6 +63,17 @@ export async function handleAssetHubAIModifyTask(job: Job<TaskJobData>) {
         user_input: modifyInstruction,
       },
     })
+    : isProp
+      ? buildPrompt({
+        promptId: PROMPT_IDS.NP_PROP_DESCRIPTION_UPDATE,
+        locale: job.data.locale,
+        variables: {
+          prop_name: readRequiredString(payload.propName || '道具', 'propName'),
+          original_description: removePropPromptSuffix(currentDescriptionRaw),
+          modify_instruction: modifyInstruction,
+          image_context: '',
+        },
+      })
     : buildPrompt({
       promptId: PROMPT_IDS.NP_LOCATION_MODIFY,
       locale: job.data.locale,
@@ -79,7 +91,12 @@ export async function handleAssetHubAIModifyTask(job: Job<TaskJobData>) {
   })
   await assertTaskActive(job, 'asset_hub_ai_modify_prepare')
 
-  const streamContext = createWorkerLLMStreamContext(job, isCharacter ? 'asset_hub_ai_modify_character' : 'asset_hub_ai_modify_location')
+  const streamContextKey = isCharacter
+    ? 'asset_hub_ai_modify_character'
+    : isProp
+      ? 'asset_hub_ai_modify_prop'
+      : 'asset_hub_ai_modify_location'
+  const streamContext = createWorkerLLMStreamContext(job, streamContextKey)
   const streamCallbacks = createWorkerLLMStreamCallbacks(job, streamContext)
 
   const completion = await withInternalLLMStreamCallbacks(
@@ -91,10 +108,10 @@ export async function handleAssetHubAIModifyTask(job: Job<TaskJobData>) {
         messages: [{ role: 'user', content: finalPrompt }],
         temperature: 0.7,
         projectId: 'asset-hub',
-        action: isCharacter ? 'ai_modify_character' : 'ai_modify_location',
+        action: isCharacter ? 'ai_modify_character' : isProp ? 'ai_modify_prop' : 'ai_modify_location',
         meta: {
-          stepId: isCharacter ? 'asset_hub_ai_modify_character' : 'asset_hub_ai_modify_location',
-          stepTitle: isCharacter ? '角色描述修改' : '场景描述修改',
+          stepId: streamContextKey,
+          stepTitle: isCharacter ? '角色描述修改' : isProp ? '道具描述修改' : '场景描述修改',
           stepIndex: 1,
           stepTotal: 1,
         },
@@ -110,7 +127,7 @@ export async function handleAssetHubAIModifyTask(job: Job<TaskJobData>) {
     stageLabel: '资产修改结果已生成',
     displayMode: 'detail',
     meta: {
-      targetType: isCharacter ? 'character' : 'location',
+      targetType: isCharacter ? 'character' : isProp ? 'prop' : 'location',
       targetId,
     },
   })

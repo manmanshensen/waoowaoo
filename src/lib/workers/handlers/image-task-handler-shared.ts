@@ -95,7 +95,51 @@ export function pickFirstString(...values: unknown[]) {
   return null
 }
 
-export async function generateLabeledImageToCos(params: {
+async function generateImageToStorage(params: {
+  job: Job<TaskJobData>
+  userId: string
+  modelId: string
+  prompt: string
+  targetId: string
+  keyPrefix: string
+  options?: {
+    referenceImages?: string[]
+    aspectRatio?: string
+    size?: string
+  }
+  label?: string
+}) {
+  const source = await resolveImageSourceFromGeneration(params.job, {
+    userId: params.userId,
+    modelId: params.modelId,
+    prompt: params.prompt,
+    options: params.options,
+  })
+
+  const uploadSource = params.label
+    ? await withLabelBar(source, params.label)
+    : source
+  const cosKey = await uploadImageSourceToCos(uploadSource, params.keyPrefix, params.targetId)
+  return cosKey
+}
+
+export async function generateCleanImageToStorage(params: {
+  job: Job<TaskJobData>
+  userId: string
+  modelId: string
+  prompt: string
+  targetId: string
+  keyPrefix: string
+  options?: {
+    referenceImages?: string[]
+    aspectRatio?: string
+    size?: string
+  }
+}) {
+  return await generateImageToStorage(params)
+}
+
+export async function generateProjectLabeledImageToStorage(params: {
   job: Job<TaskJobData>
   userId: string
   modelId: string
@@ -109,16 +153,7 @@ export async function generateLabeledImageToCos(params: {
     size?: string
   }
 }) {
-  const source = await resolveImageSourceFromGeneration(params.job, {
-    userId: params.userId,
-    modelId: params.modelId,
-    prompt: params.prompt,
-    options: params.options,
-  })
-
-  const labeled = await withLabelBar(source, params.label)
-  const cosKey = await uploadImageSourceToCos(labeled, params.keyPrefix, params.targetId)
-  return cosKey
+  return await generateImageToStorage(params)
 }
 
 export async function resolveNovelData(projectId: string) {

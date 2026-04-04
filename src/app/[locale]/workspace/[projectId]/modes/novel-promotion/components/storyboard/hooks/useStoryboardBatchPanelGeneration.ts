@@ -12,7 +12,75 @@ interface UseStoryboardBatchPanelGenerationProps {
   submittingPanelImageIds: Set<string>
   getTextPanels: (storyboard: NovelPromotionStoryboard) => StoryboardPanel[]
   regeneratePanelImage: (panelId: string, count?: number, force?: boolean) => Promise<void>
+  regeneratePanelGroupImages: (panelIds: string[]) => Promise<void>
   setIsEpisodeBatchSubmitting: (value: boolean) => void
+}
+
+interface PendingPanelGroupInput {
+  submittingPanelImageIds: Set<string>
+}
+
+const PREFERRED_PANEL_GROUP_SIZES = [9, 4, 1] as const
+
+export function splitPendingPanelIdsIntoGroups(panelIds: string[]): string[][] {
+  const groups: string[][] = []
+  let cursor = 0
+
+  while (cursor < panelIds.length) {
+    const remaining = panelIds.length - cursor
+    const groupSize = PREFERRED_PANEL_GROUP_SIZES.find((size) => size <= remaining) ?? 1
+    groups.push(panelIds.slice(cursor, cursor + groupSize))
+    cursor += groupSize
+  }
+
+  return groups
+}
+
+function buildPendingPanelGroupsForPanels(
+  panels: StoryboardPanel[],
+  input: PendingPanelGroupInput,
+): string[][] {
+  const groups: string[][] = []
+  let currentGroup: StoryboardPanel[] = []
+
+  const flushGroup = () => {
+    if (currentGroup.length === 0) return
+    groups.push(...splitPendingPanelIdsIntoGroups(currentGroup.map((panel) => panel.id)))
+    currentGroup = []
+  }
+
+  for (const panel of panels) {
+    const isTaskRunning =
+      Boolean((panel as { imageTaskRunning?: boolean }).imageTaskRunning) || input.submittingPanelImageIds.has(panel.id)
+    const isPending = !panel.imageUrl && !isTaskRunning
+    if (!isPending) {
+      flushGroup()
+      continue
+    }
+    currentGroup.push(panel)
+  }
+
+  flushGroup()
+
+  return groups
+}
+
+function buildPendingPanelGroups(input: {
+  sortedStoryboards: NovelPromotionStoryboard[]
+  submittingPanelImageIds: Set<string>
+  getTextPanels: (storyboard: NovelPromotionStoryboard) => StoryboardPanel[]
+}): string[][] {
+  const groups: string[][] = []
+
+  for (const storyboard of input.sortedStoryboards) {
+    groups.push(
+      ...buildPendingPanelGroupsForPanels(input.getTextPanels(storyboard), {
+        submittingPanelImageIds: input.submittingPanelImageIds,
+      }),
+    )
+  }
+
+  return groups
 }
 
 export function useStoryboardBatchPanelGeneration({
@@ -20,6 +88,7 @@ export function useStoryboardBatchPanelGeneration({
   submittingPanelImageIds,
   getTextPanels,
   regeneratePanelImage,
+  regeneratePanelGroupImages,
   setIsEpisodeBatchSubmitting,
 }: UseStoryboardBatchPanelGenerationProps) {
   const t = useTranslations('storyboard')
@@ -28,6 +97,21 @@ export function useStoryboardBatchPanelGeneration({
       const panels = getTextPanels(storyboard)
       return count + panels.filter((panel) => panel.imageTaskRunning || submittingPanelImageIds.has(panel.id)).length
     }, 0)
+  }, [getTextPanels, sortedStoryboards, submittingPanelImageIds])
+
+  const pendingPanelGroups = useMemo(() => buildPendingPanelGroups({
+    sortedStoryboards,
+    submittingPanelImageIds,
+    getTextPanels,
+  }), [getTextPanels, sortedStoryboards, submittingPanelImageIds])
+
+  const getPendingPanelGroupsForStoryboard = useCallback((storyboardId: string) => {
+    const storyboard = sortedStoryboards.find((item) => item.id === storyboardId)
+    if (!storyboard) return []
+
+    return buildPendingPanelGroupsForPanels(getTextPanels(storyboard), {
+      submittingPanelImageIds,
+    })
   }, [getTextPanels, sortedStoryboards, submittingPanelImageIds])
 
   const pendingPanelCount = useMemo(() => {
@@ -114,9 +198,67 @@ export function useStoryboardBatchPanelGeneration({
     }
   }, [getTextPanels, regeneratePanelImage, setIsEpisodeBatchSubmitting, sortedStoryboards, submittingPanelImageIds, t])
 
+  const handleGeneratePanelGroups = useCallback(async () => {
+    setIsEpisodeBatchSubmitting(true)
+    try {
+      if (pendingPanelGroups.length === 0) {
+        _ulogInfo('[合并生成] 没有需要生成的分镜图片')
+        return
+      }
+
+      for (let index = 0; index < pendingPanelGroups.length; index += 1) {
+        const group = pendingPanelGroups[index]
+        _ulogInfo(`[合并生成] 提交第 ${index + 1}/${pendingPanelGroups.length} 组 (${group.length} 个)`)
+        await regeneratePanelGroupImages(group)
+      }
+    } catch (error: unknown) {
+      _ulogError('[合并生成] 发生意外错误:', error)
+      alert(
+        t('messages.batchGenerateFailed', {
+          error: getErrorMessage(error, t('common.unknownError')),
+        }),
+      )
+    } finally {
+      setIsEpisodeBatchSubmitting(false)
+    }
+  }, [pendingPanelGroups, regeneratePanelGroupImages, setIsEpisodeBatchSubmitting, t])
+
+  const handleGenerateStoryboardPanelGroups = useCallback(async (storyboardId: string) => {
+    setIsEpisodeBatchSubmitting(true)
+    try {
+      const pendingGroups = getPendingPanelGroupsForStoryboard(storyboardId)
+
+      if (pendingGroups.length === 0) {
+        _ulogInfo(`[片段合并生成] 片段 ${storyboardId} 没有需要生成的分镜图片`)
+        return
+      }
+
+      for (let index = 0; index < pendingGroups.length; index += 1) {
+        const group = pendingGroups[index]
+        _ulogInfo(
+          `[片段合并生成] 片段 ${storyboardId} 提交第 ${index + 1}/${pendingGroups.length} 组 (${group.length} 个)`,
+        )
+        await regeneratePanelGroupImages(group)
+      }
+    } catch (error: unknown) {
+      _ulogError('[片段合并生成] 发生意外错误:', error)
+      alert(
+        t('messages.batchGenerateFailed', {
+          error: getErrorMessage(error, t('common.unknownError')),
+        }),
+      )
+    } finally {
+      setIsEpisodeBatchSubmitting(false)
+    }
+  }, [getPendingPanelGroupsForStoryboard, regeneratePanelGroupImages, setIsEpisodeBatchSubmitting, t])
+
   return {
     runningCount,
     pendingPanelCount,
+    pendingGroupCount: pendingPanelGroups.length,
+    getPendingPanelGroupsForStoryboard,
     handleGenerateAllPanels,
+    handleGeneratePanelGroups,
+    handleGenerateStoryboardPanelGroups,
   }
 }

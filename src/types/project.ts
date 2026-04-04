@@ -248,6 +248,14 @@ export interface NovelPromotionProject {
   characterModel: string
   locationModel: string
   storyboardModel: string
+  combinedStoryboardModel?: string | null
+  combinedStoryboardResolution?: string | null
+  combinedStoryboard1x1Model?: string | null
+  combinedStoryboard2x2Model?: string | null
+  combinedStoryboard3x3Model?: string | null
+  combinedStoryboard1x1Resolution?: string | null
+  combinedStoryboard2x2Resolution?: string | null
+  combinedStoryboard3x3Resolution?: string | null
   editModel: string
   videoModel: string
   audioModel: string

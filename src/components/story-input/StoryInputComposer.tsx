@@ -125,7 +125,7 @@ export default function StoryInputComposer({
           placeholder={placeholder}
           rows={minRows}
           disabled={disabled}
-          className={`w-full resize-none border-none bg-transparent text-base text-[var(--glass-text-primary)] outline-none placeholder:text-[var(--glass-text-tertiary)] custom-scrollbar ${textareaClassName ?? 'p-5 pb-3'}`}
+          className={`w-full resize-none border-none bg-transparent text-base text-[var(--glass-text-primary)] outline-none placeholder:text-[var(--glass-text-tertiary)] app-scrollbar ${textareaClassName ?? 'p-5 pb-3'}`}
         />
       </div>
 

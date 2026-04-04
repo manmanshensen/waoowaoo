@@ -86,7 +86,7 @@ export default function AiWriteModal({
               value={promptText}
               onChange={(e) => setPromptText(e.target.value)}
               placeholder={t('placeholder')}
-              className="glass-textarea-base custom-scrollbar h-36 px-4 py-3 text-sm resize-none placeholder:text-[var(--glass-text-tertiary)]"
+              className="glass-textarea-base app-scrollbar h-36 px-4 py-3 text-sm resize-none placeholder:text-[var(--glass-text-tertiary)]"
               disabled={loading}
               autoFocus
             />

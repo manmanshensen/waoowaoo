@@ -9,7 +9,7 @@ import {
 import { resolveStorageKeyFromMediaValue } from '@/lib/media/service'
 
 vi.mock('@/lib/storage', () => ({
-  getSignedUrl: vi.fn((key: string) => `/signed/${key}`),
+  getSignedObjectUrl: vi.fn(async (key: string) => `https://signed.example/${key}`),
   toFetchableUrl: vi.fn((value: string) => (
     value.startsWith('/') ? `http://localhost:3000${value}` : value
   )),
@@ -56,7 +56,7 @@ describe('outbound-image normalization', () => {
   it('unwraps next/image and resolves /m route to signed source', async () => {
     const input = '/_next/image?url=%2Fm%2Fpub-1&w=640&q=75'
     const normalized = await normalizeToOriginalMediaUrl(input)
-    expect(normalized).toBe('http://localhost:3000/signed/images/from-media.png')
+    expect(normalized).toBe('https://signed.example/images/from-media.png')
   })
 
   it('fails explicitly when /m route cannot be resolved to storage key', async () => {
@@ -68,12 +68,17 @@ describe('outbound-image normalization', () => {
 
   it('signs storage key inputs', async () => {
     const normalized = await normalizeToOriginalMediaUrl('images/direct.png')
-    expect(normalized).toBe('http://localhost:3000/signed/images/direct.png')
+    expect(normalized).toBe('https://signed.example/images/direct.png')
   })
 
   it('normalizes api relative path to absolute fetchable url', async () => {
     const normalized = await normalizeToOriginalMediaUrl('/api/files/images%2Fa.png')
     expect(normalized).toBe('http://localhost:3000/api/files/images%2Fa.png')
+  })
+
+  it('rewrites storage sign api path to direct signed storage url', async () => {
+    const normalized = await normalizeToOriginalMediaUrl('/api/storage/sign?key=images%2Fa.png&expires=3600')
+    expect(normalized).toBe('https://signed.example/images/a.png')
   })
 
   it('fails explicitly on unsupported root-relative input', async () => {

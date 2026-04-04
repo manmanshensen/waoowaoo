@@ -391,14 +391,14 @@ export function CharacterCard({ character, onImageClick, onImageEdit, onVoiceDes
             <input ref={voiceInputRef} type="file" accept="audio/*" onChange={handleUploadVoice} className="hidden" />
 
             {/* 图片区域 */}
-            <div className="relative bg-[var(--glass-bg-muted)] min-h-[100px]">
+            <div className="relative aspect-[3/2] bg-[var(--glass-bg-muted)]">
                 {displayImageUrl ? (
                     <>
                         <MediaImageWithLoading
                             src={displayImageUrl}
                             alt={character.name}
-                            containerClassName="w-full min-h-[120px]"
-                            className="w-full h-auto object-contain cursor-zoom-in"
+                            containerClassName="h-full w-full"
+                            className="h-full w-full object-contain cursor-zoom-in"
                             onClick={() => onImageClick?.(displayImageUrl)}
                         />
                         {/* 操作按钮 - 非生成时显示 */}
@@ -422,7 +422,7 @@ export function CharacterCard({ character, onImageClick, onImageEdit, onVoiceDes
                         )}
                     </>
                 ) : (
-                    <div className="flex flex-col items-center justify-center py-12 text-[var(--glass-text-tertiary)]">
+                    <div className="flex h-full flex-col items-center justify-center px-4 py-6 text-[var(--glass-text-tertiary)]">
                         <AppIcon name="image" className="w-12 h-12 mb-3" />
                         <ImageGenerationInlineCountButton
                             prefix={<span>{tAssets('image.generateCountPrefix')}</span>}

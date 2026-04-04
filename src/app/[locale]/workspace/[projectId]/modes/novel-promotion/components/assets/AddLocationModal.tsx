@@ -133,8 +133,8 @@ export default function AddLocationModal({
 
   return (
     <div className="fixed inset-0 bg-[var(--glass-overlay)] flex items-center justify-center z-50 p-4">
-      <div className="bg-[var(--glass-bg-surface)] rounded-xl shadow-xl max-w-2xl w-full max-h-[85vh] overflow-y-auto">
-        <div className="p-6">
+      <div className="bg-[var(--glass-bg-surface)] rounded-xl shadow-xl max-w-2xl w-full max-h-[85vh] overflow-hidden flex flex-col">
+        <div className="p-6 overflow-y-auto app-scrollbar flex-1 min-h-0">
           {/* 标题 */}
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-lg font-semibold text-[var(--glass-text-primary)]">

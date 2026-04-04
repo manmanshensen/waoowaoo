@@ -45,6 +45,12 @@ interface WorkspaceHeaderShellProps {
   characterModel: string | null | undefined
   locationModel: string | null | undefined
   storyboardModel: string | null | undefined
+  combinedStoryboard1x1Model: string | null | undefined
+  combinedStoryboard2x2Model: string | null | undefined
+  combinedStoryboard3x3Model: string | null | undefined
+  combinedStoryboard1x1Resolution: string | null | undefined
+  combinedStoryboard2x2Resolution: string | null | undefined
+  combinedStoryboard3x3Resolution: string | null | undefined
   editModel: string | null | undefined
   videoModel: string | null | undefined
   audioModel: string | null | undefined
@@ -92,6 +98,12 @@ export default function WorkspaceHeaderShell({
   characterModel,
   locationModel,
   storyboardModel,
+  combinedStoryboard1x1Model,
+  combinedStoryboard2x2Model,
+  combinedStoryboard3x3Model,
+  combinedStoryboard1x1Resolution,
+  combinedStoryboard2x2Resolution,
+  combinedStoryboard3x3Resolution,
   editModel,
   videoModel,
   audioModel,
@@ -131,6 +143,12 @@ export default function WorkspaceHeaderShell({
         characterModel={characterModel ?? undefined}
         locationModel={locationModel ?? undefined}
         imageModel={storyboardModel ?? undefined}
+        combinedStoryboard1x1Model={combinedStoryboard1x1Model ?? undefined}
+        combinedStoryboard2x2Model={combinedStoryboard2x2Model ?? undefined}
+        combinedStoryboard3x3Model={combinedStoryboard3x3Model ?? undefined}
+        combinedStoryboard1x1Resolution={combinedStoryboard1x1Resolution ?? undefined}
+        combinedStoryboard2x2Resolution={combinedStoryboard2x2Resolution ?? undefined}
+        combinedStoryboard3x3Resolution={combinedStoryboard3x3Resolution ?? undefined}
         editModel={editModel ?? undefined}
         videoModel={videoModel ?? undefined}
         audioModel={audioModel ?? undefined}
@@ -142,6 +160,12 @@ export default function WorkspaceHeaderShell({
         onCharacterModelChange={(value) => { onUpdateConfig('characterModel', value) }}
         onLocationModelChange={(value) => { onUpdateConfig('locationModel', value) }}
         onImageModelChange={(value) => { onUpdateConfig('storyboardModel', value) }}
+        onCombinedStoryboard1x1ModelChange={(value) => { onUpdateConfig('combinedStoryboard1x1Model', value) }}
+        onCombinedStoryboard2x2ModelChange={(value) => { onUpdateConfig('combinedStoryboard2x2Model', value) }}
+        onCombinedStoryboard3x3ModelChange={(value) => { onUpdateConfig('combinedStoryboard3x3Model', value) }}
+        onCombinedStoryboard1x1ResolutionChange={(value) => { onUpdateConfig('combinedStoryboard1x1Resolution', value) }}
+        onCombinedStoryboard2x2ResolutionChange={(value) => { onUpdateConfig('combinedStoryboard2x2Resolution', value) }}
+        onCombinedStoryboard3x3ResolutionChange={(value) => { onUpdateConfig('combinedStoryboard3x3Resolution', value) }}
         onEditModelChange={(value) => { onUpdateConfig('editModel', value) }}
         onVideoModelChange={(value) => { onUpdateConfig('videoModel', value) }}
         onAudioModelChange={(value) => { onUpdateConfig('audioModel', value) }}

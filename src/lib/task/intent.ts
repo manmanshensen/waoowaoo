@@ -23,6 +23,7 @@ const TASK_INTENT_SET = new Set<string>(TASK_INTENTS)
 
 const TASK_INTENT_BY_TYPE: Record<TaskType, TaskIntent> = {
   [TASK_TYPE.IMAGE_PANEL]: 'generate',
+  [TASK_TYPE.IMAGE_PANEL_GROUP]: 'generate',
   [TASK_TYPE.IMAGE_CHARACTER]: 'generate',
   [TASK_TYPE.IMAGE_LOCATION]: 'generate',
   [TASK_TYPE.VIDEO_PANEL]: 'generate',
@@ -47,6 +48,7 @@ const TASK_INTENT_BY_TYPE: Record<TaskType, TaskIntent> = {
   [TASK_TYPE.AI_STORY_EXPAND]: 'generate',
   [TASK_TYPE.AI_MODIFY_APPEARANCE]: 'modify',
   [TASK_TYPE.AI_MODIFY_LOCATION]: 'modify',
+  [TASK_TYPE.AI_MODIFY_PROP]: 'modify',
   [TASK_TYPE.AI_MODIFY_SHOT_PROMPT]: 'modify',
   [TASK_TYPE.ANALYZE_SHOT_VARIANTS]: 'analyze',
   [TASK_TYPE.AI_CREATE_CHARACTER]: 'generate',
@@ -59,6 +61,7 @@ const TASK_INTENT_BY_TYPE: Record<TaskType, TaskIntent> = {
   [TASK_TYPE.ASSET_HUB_AI_DESIGN_LOCATION]: 'generate',
   [TASK_TYPE.ASSET_HUB_AI_MODIFY_CHARACTER]: 'modify',
   [TASK_TYPE.ASSET_HUB_AI_MODIFY_LOCATION]: 'modify',
+  [TASK_TYPE.ASSET_HUB_AI_MODIFY_PROP]: 'modify',
   [TASK_TYPE.ASSET_HUB_REFERENCE_TO_CHARACTER]: 'process',
 }
 

@@ -44,6 +44,7 @@
   "taskType": {
     "generic": "任务",
     "imagePanel": "分镜图片",
+    "imagePanelGroup": "分镜合并图片",
     "imageCharacter": "角色图片",
     "imageLocation": "场景图片",
     "videoPanel": "视频生成",
@@ -68,6 +69,7 @@
     "aiStoryExpand": "AI 故事扩写",
     "aiModifyAppearance": "角色描述修改",
     "aiModifyLocation": "场景描述修改",
+    "aiModifyProp": "道具描述修改",
     "aiModifyShotPrompt": "镜头提示词修改",
     "analyzeShotVariants": "镜头变体分析",
     "aiCreateCharacter": "项目角色设计",
@@ -80,6 +82,7 @@
     "assetHubAiDesignLocation": "资产库场景设计",
     "assetHubAiModifyCharacter": "资产库角色修改",
     "assetHubAiModifyLocation": "资产库场景修改",
+    "assetHubAiModifyProp": "资产库道具修改",
     "assetHubReferenceToCharacter": "资产库参考图转角色"
   },
   "stage": {
@@ -87,7 +90,9 @@
     "generateCharacterImage": "生成角色图片",
     "generateLocationImage": "生成场景图片",
     "generatePanelCandidate": "生成候选分镜图",
+    "generatePanelGroup": "生成合并分镜图",
     "generatePanelVideo": "生成分镜视频",
+    "splitPanelGroup": "拆分合并分镜图",
     "generateVoiceSubmit": "提交配音任务",
     "generateVoicePersist": "保存配音结果",
     "voiceDesignSubmit": "提交声音设计任务",

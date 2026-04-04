@@ -21,6 +21,7 @@ import {
 } from '@/lib/workflow-concurrency'
 
 export type ParsedModelKey = { provider: string, modelId: string }
+export type CombinedStoryboardLayoutKey = '1x1' | '2x2' | '3x3'
 
 /**
  * 解析模型复合 Key（严格模式，仅接受 provider::modelId）
@@ -102,6 +103,14 @@ export interface ProjectModelConfig {
   characterModel: string | null
   locationModel: string | null
   storyboardModel: string | null
+  combinedStoryboardModel: string | null
+  combinedStoryboardResolution: string | null
+  combinedStoryboard1x1Model: string | null
+  combinedStoryboard2x2Model: string | null
+  combinedStoryboard3x3Model: string | null
+  combinedStoryboard1x1Resolution: string | null
+  combinedStoryboard2x2Resolution: string | null
+  combinedStoryboard3x3Resolution: string | null
   editModel: string | null
   videoModel: string | null
   audioModel: string | null
@@ -116,10 +125,75 @@ export interface UserModelConfig {
   characterModel: string | null
   locationModel: string | null
   storyboardModel: string | null
+  combinedStoryboardModel: string | null
+  combinedStoryboardResolution: string | null
+  combinedStoryboard1x1Model: string | null
+  combinedStoryboard2x2Model: string | null
+  combinedStoryboard3x3Model: string | null
+  combinedStoryboard1x1Resolution: string | null
+  combinedStoryboard2x2Resolution: string | null
+  combinedStoryboard3x3Resolution: string | null
   editModel: string | null
   videoModel: string | null
   audioModel: string | null
   capabilityDefaults: CapabilitySelections
+}
+
+const COMBINED_STORYBOARD_LAYOUT_DEFAULTS: Record<CombinedStoryboardLayoutKey, { resolution: string }> = {
+  '1x1': { resolution: '1K' },
+  '2x2': { resolution: '2K' },
+  '3x3': { resolution: '4K' },
+}
+
+function resolveCombinedStoryboardLayoutKey(panelCount: number): CombinedStoryboardLayoutKey {
+  if (panelCount <= 1) return '1x1'
+  if (panelCount <= 4) return '2x2'
+  return '3x3'
+}
+
+export function getCombinedStoryboardConfigForPanelCount(
+  config: Pick<
+    ProjectModelConfig | UserModelConfig,
+    | 'storyboardModel'
+    | 'combinedStoryboardModel'
+    | 'combinedStoryboardResolution'
+    | 'combinedStoryboard1x1Model'
+    | 'combinedStoryboard2x2Model'
+    | 'combinedStoryboard3x3Model'
+    | 'combinedStoryboard1x1Resolution'
+    | 'combinedStoryboard2x2Resolution'
+    | 'combinedStoryboard3x3Resolution'
+  >,
+  panelCount: number,
+): {
+  layoutKey: CombinedStoryboardLayoutKey
+  model: string | null
+  resolution: string
+} {
+  const layoutKey = resolveCombinedStoryboardLayoutKey(panelCount)
+  const fallbackResolution = COMBINED_STORYBOARD_LAYOUT_DEFAULTS[layoutKey].resolution
+
+  if (layoutKey === '1x1') {
+    return {
+      layoutKey,
+      model: config.combinedStoryboard1x1Model || config.combinedStoryboardModel || config.storyboardModel,
+      resolution: config.combinedStoryboard1x1Resolution || fallbackResolution,
+    }
+  }
+
+  if (layoutKey === '2x2') {
+    return {
+      layoutKey,
+      model: config.combinedStoryboard2x2Model || config.combinedStoryboardModel || config.storyboardModel,
+      resolution: config.combinedStoryboard2x2Resolution || fallbackResolution,
+    }
+  }
+
+  return {
+    layoutKey,
+    model: config.combinedStoryboard3x3Model || config.combinedStoryboardModel || config.storyboardModel,
+    resolution: config.combinedStoryboard3x3Resolution || config.combinedStoryboardResolution || fallbackResolution,
+  }
 }
 
 export async function getUserWorkflowConcurrencyConfig(
@@ -158,6 +232,34 @@ export async function getProjectModelConfig(
     characterModel: extractModelKey(projectData?.characterModel) || null,
     locationModel: extractModelKey(projectData?.locationModel) || null,
     storyboardModel: extractModelKey(projectData?.storyboardModel) || null,
+    combinedStoryboardModel: extractModelKey(projectData?.combinedStoryboardModel)
+      || extractModelKey(projectData?.storyboardModel)
+      || null,
+    combinedStoryboard1x1Model: extractModelKey(projectData?.combinedStoryboard1x1Model)
+      || extractModelKey(userPref?.combinedStoryboard1x1Model)
+      || extractModelKey(projectData?.combinedStoryboardModel)
+      || extractModelKey(userPref?.combinedStoryboardModel)
+      || extractModelKey(projectData?.storyboardModel)
+      || extractModelKey(userPref?.storyboardModel)
+      || null,
+    combinedStoryboard2x2Model: extractModelKey(projectData?.combinedStoryboard2x2Model)
+      || extractModelKey(userPref?.combinedStoryboard2x2Model)
+      || extractModelKey(projectData?.combinedStoryboardModel)
+      || extractModelKey(userPref?.combinedStoryboardModel)
+      || extractModelKey(projectData?.storyboardModel)
+      || extractModelKey(userPref?.storyboardModel)
+      || null,
+    combinedStoryboard3x3Model: extractModelKey(projectData?.combinedStoryboard3x3Model)
+      || extractModelKey(userPref?.combinedStoryboard3x3Model)
+      || extractModelKey(projectData?.combinedStoryboardModel)
+      || extractModelKey(userPref?.combinedStoryboardModel)
+      || extractModelKey(projectData?.storyboardModel)
+      || extractModelKey(userPref?.storyboardModel)
+      || null,
+    combinedStoryboardResolution: projectData?.combinedStoryboardResolution || '4K',
+    combinedStoryboard1x1Resolution: projectData?.combinedStoryboard1x1Resolution || userPref?.combinedStoryboard1x1Resolution || '1K',
+    combinedStoryboard2x2Resolution: projectData?.combinedStoryboard2x2Resolution || userPref?.combinedStoryboard2x2Resolution || '2K',
+    combinedStoryboard3x3Resolution: projectData?.combinedStoryboard3x3Resolution || userPref?.combinedStoryboard3x3Resolution || projectData?.combinedStoryboardResolution || userPref?.combinedStoryboardResolution || '4K',
     editModel: extractModelKey(projectData?.editModel) || null,
     videoModel: extractModelKey(projectData?.videoModel) || null,
     audioModel: extractModelKey(projectData?.audioModel) || extractModelKey(userPref?.audioModel) || null,
@@ -181,6 +283,25 @@ export async function getUserModelConfig(userId: string): Promise<UserModelConfi
     characterModel: extractModelKey(userPref?.characterModel) || null,
     locationModel: extractModelKey(userPref?.locationModel) || null,
     storyboardModel: extractModelKey(userPref?.storyboardModel) || null,
+    combinedStoryboardModel: extractModelKey(userPref?.combinedStoryboardModel)
+      || extractModelKey(userPref?.storyboardModel)
+      || null,
+    combinedStoryboard1x1Model: extractModelKey(userPref?.combinedStoryboard1x1Model)
+      || extractModelKey(userPref?.combinedStoryboardModel)
+      || extractModelKey(userPref?.storyboardModel)
+      || null,
+    combinedStoryboard2x2Model: extractModelKey(userPref?.combinedStoryboard2x2Model)
+      || extractModelKey(userPref?.combinedStoryboardModel)
+      || extractModelKey(userPref?.storyboardModel)
+      || null,
+    combinedStoryboard3x3Model: extractModelKey(userPref?.combinedStoryboard3x3Model)
+      || extractModelKey(userPref?.combinedStoryboardModel)
+      || extractModelKey(userPref?.storyboardModel)
+      || null,
+    combinedStoryboardResolution: userPref?.combinedStoryboardResolution || '4K',
+    combinedStoryboard1x1Resolution: userPref?.combinedStoryboard1x1Resolution || '1K',
+    combinedStoryboard2x2Resolution: userPref?.combinedStoryboard2x2Resolution || '2K',
+    combinedStoryboard3x3Resolution: userPref?.combinedStoryboard3x3Resolution || userPref?.combinedStoryboardResolution || '4K',
     editModel: extractModelKey(userPref?.editModel) || null,
     videoModel: extractModelKey(userPref?.videoModel) || null,
     audioModel: extractModelKey(userPref?.audioModel) || null,

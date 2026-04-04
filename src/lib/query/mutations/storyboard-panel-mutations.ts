@@ -57,6 +57,51 @@ export function useRegenerateProjectPanelImage(projectId: string) {
     })
 }
 
+export function useRegenerateProjectPanelGroupImage(projectId: string) {
+    const queryClient = useQueryClient()
+    return useMutation({
+        mutationFn: async ({ panelIds }: { panelIds: string[] }) => {
+            const res = await apiFetch(`/api/novel-promotion/${projectId}/regenerate-panel-group-image`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ panelIds }),
+            })
+            if (!res.ok) {
+                const error = await res.json().catch(() => ({}))
+                if (res.status === 402) throw new Error('余额不足，请充值后继续使用')
+                if (res.status === 429 || error?.code === 'RATE_LIMIT') {
+                    const retryAfter = error?.retryAfter || 60
+                    throw new Error(`API 配额超限，请等待 ${retryAfter} 秒后重试`)
+                }
+                throw new Error(resolveTaskErrorMessage(error, '合并生成失败'))
+            }
+            return res.json() as Promise<{ panelIds: string[] }>
+        },
+        onMutate: ({ panelIds }) => {
+            panelIds.forEach((panelId) => {
+                upsertTaskTargetOverlay(queryClient, {
+                    projectId,
+                    targetType: 'NovelPromotionPanel',
+                    targetId: panelId,
+                    intent: 'generate',
+                })
+            })
+        },
+        onError: (_error, { panelIds }) => {
+            panelIds.forEach((panelId) => {
+                clearTaskTargetOverlay(queryClient, {
+                    projectId,
+                    targetType: 'NovelPromotionPanel',
+                    targetId: panelId,
+                })
+            })
+        },
+        onSettled: () => {
+            invalidateQueryTemplates(queryClient, [queryKeys.projectAssets.all(projectId)])
+        },
+    })
+}
+
 /**
  * 修改镜头图片（storyboard）
  */

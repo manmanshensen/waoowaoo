@@ -15,6 +15,7 @@ import {
     useUpdateProjectLocationName,
 } from '@/lib/query/hooks'
 import type { LocationAvailableSlot } from '@/lib/location-available-slots'
+import { AiModifyDescriptionField } from './AiModifyDescriptionField'
 
 export interface LocationEditModalProps {
     mode: 'asset-hub' | 'project'
@@ -129,7 +130,7 @@ export function LocationEditModal({
     }
 
     const handleAiModify = async () => {
-        if (!aiModifyInstruction.trim()) return
+        if (!aiModifyInstruction.trim()) return false
 
         try {
             setIsAiModifying(true)
@@ -146,8 +147,9 @@ export function LocationEditModal({
                     setAvailableSlots(Array.isArray(data.availableSlots) ? data.availableSlots : [])
                     onUpdate?.(data.modifiedDescription)
                     setAiModifyInstruction('')
+                    return true
                 }
-                return
+                return false
             }
 
             const data = await aiModifyProject.mutateAsync({
@@ -162,11 +164,14 @@ export function LocationEditModal({
                 setAvailableSlots(Array.isArray(data.availableSlots) ? data.availableSlots : [])
                 onUpdate?.(nextDescription)
                 setAiModifyInstruction('')
+                return true
             }
+            return false
         } catch (error: unknown) {
             if (shouldShowError(error)) {
                 alert(`${t('modal.modifyFailed')}: ${getErrorMessage(error, t('errors.failed'))}`)
             }
+            return false
         } finally {
             setIsAiModifying(false)
         }
@@ -262,58 +267,20 @@ export function LocationEditModal({
                         </div>
                     </div>
 
-                    <div className="space-y-2 glass-surface-soft p-4 rounded-lg border border-[var(--glass-stroke-base)]">
-                        <label className="block text-sm font-medium text-[var(--glass-tone-info-fg)] flex items-center gap-2">
-                            <AppIcon name="bolt" className="w-4 h-4" />
-                            {t('modal.smartModify')}
-                        </label>
-                        <div className="flex gap-2">
-                            <input
-                                type="text"
-                                value={aiModifyInstruction}
-                                onChange={(e) => setAiModifyInstruction(e.target.value)}
-                                placeholder={t('modal.modifyPlaceholder')}
-                                className="glass-input-base flex-1 px-3 py-2"
-                                disabled={isAiModifying}
-                                onKeyDown={(e) => {
-                                    if (e.key === 'Enter' && !e.shiftKey) {
-                                        e.preventDefault()
-                                        handleAiModify()
-                                    }
-                                }}
-                            />
-                            <button
-                                onClick={handleAiModify}
-                                disabled={isAiModifying || !aiModifyInstruction.trim()}
-                                className="glass-btn-base glass-btn-tone-info px-4 py-2 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 whitespace-nowrap"
-                            >
-                                {isAiModifying ? (
-                                    <TaskStatusInline state={aiModifyingState} className="text-white [&>span]:text-white [&_svg]:text-white" />
-                                ) : (
-                                    <>
-                                        <AppIcon name="bolt" className="w-4 h-4" />
-                                        {t('modal.smartModify')}
-                                    </>
-                                )}
-                            </button>
-                        </div>
-                        <p className="glass-field-hint">
-                            {t('modal.aiLocationTip')}
-                        </p>
-                    </div>
-
-                    <div className="space-y-2">
-                        <label className="glass-field-label block">
-                            {t('location.description')}
-                        </label>
-                        <textarea
-                            value={editingDescription}
-                            onChange={(e) => setEditingDescription(e.target.value)}
-                            className="glass-textarea-base w-full h-48 px-3 py-2 resize-none"
-                            placeholder={t('modal.descPlaceholder')}
-                            disabled={isAiModifying}
-                        />
-                    </div>
+                    <AiModifyDescriptionField
+                        label={t('location.description')}
+                        description={editingDescription}
+                        onDescriptionChange={setEditingDescription}
+                        descriptionPlaceholder={t('modal.descPlaceholder')}
+                        aiInstruction={aiModifyInstruction}
+                        onAiInstructionChange={setAiModifyInstruction}
+                        aiInstructionPlaceholder={t('modal.modifyPlaceholder')}
+                        onAiModify={handleAiModify}
+                        isAiModifying={isAiModifying}
+                        aiModifyingState={aiModifyingState}
+                        actionLabel={t('modal.modifyDescription')}
+                        cancelLabel={t('common.cancel')}
+                    />
                 </div>
 
                 <div className="flex gap-3 justify-end p-4 border-t border-[var(--glass-stroke-base)] bg-[var(--glass-bg-surface-strong)] rounded-b-lg flex-shrink-0">
