@@ -1,6 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { resolveTaskResponse } from '@/lib/task/client'
-import { apiFetch } from '@/lib/api-fetch'
 import {
   requestJsonWithError,
   requestTaskResponseWithError,
@@ -17,7 +16,7 @@ export function useUpdateCharacterName() {
 
   return useMutation({
     mutationFn: async ({ characterId, name }: { characterId: string; name: string }) => {
-      const res = await requestJsonWithError(`/api/assets/${characterId}`, {
+      return await requestJsonWithError(`/api/assets/${characterId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -26,23 +25,6 @@ export function useUpdateCharacterName() {
           name,
         }),
       }, 'Failed to update character name')
-
-      // 等待图片标签更新完成，确保 onSuccess invalidate 后前端能立即看到新标签
-      try {
-        await apiFetch(`/api/assets/${characterId}/update-label`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            scope: 'global',
-            kind: 'character',
-            newName: name,
-          }),
-        })
-      } catch (e) {
-        console.error('更新图片标签失败:', e)
-      }
-
-      return res
     },
     onSuccess: invalidateCharacters,
   })
@@ -54,7 +36,7 @@ export function useUpdateLocationName() {
 
   return useMutation({
     mutationFn: async ({ locationId, name }: { locationId: string; name: string }) => {
-      const res = await requestJsonWithError(`/api/assets/${locationId}`, {
+      return await requestJsonWithError(`/api/assets/${locationId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -63,23 +45,6 @@ export function useUpdateLocationName() {
           name,
         }),
       }, 'Failed to update location name')
-
-      // 等待图片标签更新完成，确保 onSuccess invalidate 后前端能立即看到新标签
-      try {
-        await apiFetch(`/api/assets/${locationId}/update-label`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            scope: 'global',
-            kind: 'location',
-            newName: name,
-          }),
-        })
-      } catch (e) {
-        console.error('更新图片标签失败:', e)
-      }
-
-      return res
     },
     onSuccess: invalidateLocations,
   })
@@ -216,6 +181,38 @@ export function useAiModifyLocationDescription() {
         'Failed to modify location description',
       )
       return resolveTaskResponse<{ modifiedDescription?: string; availableSlots?: LocationAvailableSlot[] }>(response)
+    },
+  })
+}
+
+export function useAiModifyPropDescription() {
+  return useMutation({
+    mutationFn: async ({
+      propId,
+      variantId,
+      currentDescription,
+      modifyInstruction,
+    }: {
+      propId: string
+      variantId?: string
+      currentDescription: string
+      modifyInstruction: string
+    }) => {
+      const response = await requestTaskResponseWithError(
+        '/api/asset-hub/ai-modify-prop',
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            propId,
+            variantId,
+            currentDescription,
+            modifyInstruction,
+          }),
+        },
+        'Failed to modify prop description',
+      )
+      return resolveTaskResponse<{ modifiedDescription?: string }>(response)
     },
   })
 }

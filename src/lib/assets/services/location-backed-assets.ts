@@ -191,6 +191,7 @@ export async function createProjectLocationBackedAsset(input: {
   novelPromotionProjectId: string
   name: string
   summary: string
+  initialDescription?: string
   kind: LocationBackedAssetKind
 }): Promise<{ id: string }> {
   const id = randomUUID()
@@ -219,8 +220,8 @@ export async function createProjectLocationBackedAsset(input: {
   `)
   await seedProjectLocationBackedImageSlots({
     locationId: id,
-    fallbackDescription: input.summary,
-    descriptions: [input.summary],
+    fallbackDescription: input.initialDescription ?? input.summary,
+    descriptions: [input.initialDescription ?? input.summary],
     availableSlots: [],
   })
   return { id }
@@ -231,6 +232,7 @@ export async function createGlobalLocationBackedAsset(input: {
   folderId?: string | null
   name: string
   summary: string
+  initialDescription?: string
   artStyle?: string | null
   kind: LocationBackedAssetKind
 }): Promise<{ id: string }> {
@@ -260,8 +262,8 @@ export async function createGlobalLocationBackedAsset(input: {
   `)
   await seedGlobalLocationBackedImageSlots({
     locationId: id,
-    fallbackDescription: input.summary,
-    descriptions: [input.summary],
+    fallbackDescription: input.initialDescription ?? input.summary,
+    descriptions: [input.initialDescription ?? input.summary],
     availableSlots: [],
   })
   return { id }

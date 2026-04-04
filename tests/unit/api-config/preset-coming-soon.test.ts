@@ -50,6 +50,7 @@ describe('api-config preset coming soon', () => {
       .map((entry) => entry.modelId)
 
     expect(modelIds).toEqual(expect.arrayContaining([
+      'wan2.7-i2v',
       'wan2.6-i2v-flash',
       'wan2.6-i2v',
       'wan2.5-i2v-preview',

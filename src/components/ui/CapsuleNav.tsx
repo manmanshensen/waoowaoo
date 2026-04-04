@@ -237,7 +237,7 @@ export function EpisodeSelector({
 
             {isOpen && (
                 <div className="glass-surface-modal absolute left-0 top-full mt-2 w-72 origin-top-left p-2 animate-fadeIn">
-                    <div className="max-h-[300px] overflow-y-auto custom-scrollbar space-y-1">
+                    <div className="max-h-[300px] overflow-y-auto app-scrollbar space-y-1">
                         {episodes.map(ep => {
                             const statusColor = ep.status?.visual === 'ready'
                                 ? 'bg-[var(--glass-tone-success-fg)]'

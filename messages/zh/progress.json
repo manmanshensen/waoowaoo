@@ -69,6 +69,7 @@
     "aiStoryExpand": "AI 故事扩写",
     "aiModifyAppearance": "角色描述修改",
     "aiModifyLocation": "场景描述修改",
+    "aiModifyProp": "道具描述修改",
     "aiModifyShotPrompt": "镜头提示词修改",
     "analyzeShotVariants": "镜头变体分析",
     "aiCreateCharacter": "项目角色设计",
@@ -81,6 +82,7 @@
     "assetHubAiDesignLocation": "资产库场景设计",
     "assetHubAiModifyCharacter": "资产库角色修改",
     "assetHubAiModifyLocation": "资产库场景修改",
+    "assetHubAiModifyProp": "资产库道具修改",
     "assetHubReferenceToCharacter": "资产库参考图转角色"
   },
   "stage": {

@@ -23,7 +23,7 @@ interface AssetGridProps {
     isDownloading?: boolean
     selectedFolderId: string | null
     onImageClick?: (url: string) => void
-    onImageEdit?: (type: 'character' | 'location', id: string, name: string, imageIndex: number, appearanceIndex?: number) => void
+    onImageEdit?: (type: 'character' | 'location' | 'prop', id: string, name: string, imageIndex: number, appearanceIndex?: number) => void
     onVoiceDesign?: (characterId: string, characterName: string) => void
     onCharacterEdit?: (character: unknown, appearance: unknown) => void
     onLocationEdit?: (location: unknown, imageIndex: number) => void

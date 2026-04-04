@@ -12,6 +12,7 @@ import { buildPrompt, PROMPT_IDS } from '@/lib/prompt-i18n'
 import { resolveAnalysisModel } from './resolve-analysis-model'
 import { seedProjectLocationBackedImageSlots } from '@/lib/assets/services/location-backed-assets'
 import { normalizeLocationAvailableSlots } from '@/lib/location-available-slots'
+import { resolvePropVisualDescription } from '@/lib/assets/prop-description'
 
 function readAssetKind(value: Record<string, unknown>): string {
   return typeof value.assetKind === 'string' ? value.assetKind : 'location'
@@ -337,7 +338,12 @@ export async function handleAnalyzeNovelTask(job: Job<TaskJobData>) {
   for (const item of parsedProps) {
     const name = readText(item.name).trim()
     const summary = readText(item.summary).trim()
-    if (!name || !summary) continue
+    const description = resolvePropVisualDescription({
+      name,
+      summary,
+      description: readText(item.description).trim(),
+    })
+    if (!name || !summary || !description) continue
 
     const normalizedName = name.toLowerCase()
     if (existingPropNameSet.has(normalizedName)) continue
@@ -353,8 +359,8 @@ export async function handleAnalyzeNovelTask(job: Job<TaskJobData>) {
     })
     await seedProjectLocationBackedImageSlots({
       locationId: created.id,
-      descriptions: [summary],
-      fallbackDescription: summary,
+      descriptions: [description],
+      fallbackDescription: description,
       availableSlots: [],
     })
     existingPropNameSet.add(normalizedName)

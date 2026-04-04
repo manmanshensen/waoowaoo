@@ -208,6 +208,38 @@ export function useAiModifyProjectLocationDescription(projectId: string) {
     })
 }
 
+export function useAiModifyProjectPropDescription(projectId: string) {
+    return useMutation({
+        mutationFn: async ({
+            propId,
+            variantId,
+            currentDescription,
+            modifyInstruction,
+        }: {
+            propId: string
+            variantId?: string
+            currentDescription: string
+            modifyInstruction: string
+        }) => {
+            const response = await requestTaskResponseWithError(
+                `/api/novel-promotion/${projectId}/ai-modify-prop`,
+                {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        propId,
+                        variantId,
+                        currentDescription,
+                        modifyInstruction,
+                    }),
+                },
+                'Failed to modify prop description',
+            )
+            return resolveTaskResponse<{ modifiedDescription?: string }>(response)
+        },
+    })
+}
+
 /**
  * AI 设计项目场景描述
  */
@@ -263,18 +295,26 @@ export function useCreateProjectLocation(projectId: string) {
  * AI 设计项目角色文案
  */
 
-export function useConfirmProjectLocationSelection(projectId: string) {
+export function useConfirmProjectLocationSelection(
+    projectId: string,
+    kind: 'location' | 'prop' = 'location',
+) {
     const queryClient = useQueryClient()
     const invalidateProjectAssets = () =>
         invalidateQueryTemplates(queryClient, [queryKeys.projectAssets.all(projectId)])
     return useMutation({
         mutationFn: async ({ locationId }: { locationId: string }) =>
             await requestJsonWithError(
-                `/api/novel-promotion/${projectId}/location/confirm-selection`,
+                `/api/assets/${locationId}/select-render`,
                 {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ locationId }),
+                    body: JSON.stringify({
+                        scope: 'project',
+                        kind,
+                        projectId,
+                        confirm: true,
+                    }),
                 },
                 '确认选择失败',
             ),

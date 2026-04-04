@@ -679,9 +679,11 @@ async function processTextTask(job: Job<TaskJobData>) {
       return await handleAssetHubAIDesignTask(job)
     case TASK_TYPE.ASSET_HUB_AI_MODIFY_CHARACTER:
     case TASK_TYPE.ASSET_HUB_AI_MODIFY_LOCATION:
+    case TASK_TYPE.ASSET_HUB_AI_MODIFY_PROP:
       return await handleAssetHubAIModifyTask(job)
     case TASK_TYPE.AI_MODIFY_APPEARANCE:
     case TASK_TYPE.AI_MODIFY_LOCATION:
+    case TASK_TYPE.AI_MODIFY_PROP:
     case TASK_TYPE.AI_MODIFY_SHOT_PROMPT:
     case TASK_TYPE.ANALYZE_SHOT_VARIANTS:
       return await handleShotAITask(job)

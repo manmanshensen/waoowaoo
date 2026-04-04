@@ -824,6 +824,21 @@
   {
     "modelType": "video",
     "provider": "bailian",
+    "modelId": "wan2.7-i2v",
+    "capabilities": {
+      "video": {
+        "generationModeOptions": [
+          "normal",
+          "firstlastframe"
+        ],
+        "firstlastframe": true,
+        "supportGenerateAudio": false
+      }
+    }
+  },
+  {
+    "modelType": "video",
+    "provider": "bailian",
     "modelId": "wan2.6-i2v-flash",
     "capabilities": {
       "video": {

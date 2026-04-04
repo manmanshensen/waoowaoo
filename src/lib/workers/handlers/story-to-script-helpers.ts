@@ -3,6 +3,7 @@ import { removeLocationPromptSuffix } from '@/lib/constants'
 import type { StoryToScriptClipCandidate } from '@/lib/novel-promotion/story-to-script/orchestrator'
 import { seedProjectLocationBackedImageSlots } from '@/lib/assets/services/location-backed-assets'
 import { normalizeLocationAvailableSlots } from '@/lib/location-available-slots'
+import { resolvePropVisualDescription } from '@/lib/assets/prop-description'
 
 export type AnyObj = Record<string, unknown>
 
@@ -165,7 +166,12 @@ export async function persistAnalyzedProps(params: {
   for (const item of params.analyzedProps) {
     const name = asString(item.name).trim()
     const summary = asString(item.summary).trim()
-    if (!name || !summary) continue
+    const description = resolvePropVisualDescription({
+      name,
+      summary,
+      description: asString(item.description).trim(),
+    })
+    if (!name || !summary || !description) continue
 
     const key = name.toLowerCase()
     if (params.existingNames.has(key)) continue
@@ -184,8 +190,8 @@ export async function persistAnalyzedProps(params: {
     })
     await seedProjectLocationBackedImageSlots({
       locationId: prop.id,
-      descriptions: [summary],
-      fallbackDescription: summary,
+      descriptions: [description],
+      fallbackDescription: description,
       availableSlots: [],
       locationImageModel: db.locationImage,
     })

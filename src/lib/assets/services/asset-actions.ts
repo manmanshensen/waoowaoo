@@ -12,11 +12,11 @@ import { normalizeImageGenerationCount } from '@/lib/image-generation/count'
 import { ensureGlobalLocationImageSlots, ensureProjectLocationImageSlots } from '@/lib/image-generation/location-slots'
 import { hasCharacterAppearanceOutput, hasGlobalCharacterAppearanceOutput, hasGlobalCharacterOutput, hasGlobalLocationImageOutput, hasGlobalLocationOutput, hasLocationImageOutput } from '@/lib/task/has-output'
 import { sanitizeImageInputsForTaskPayload } from '@/lib/media/outbound-image'
-import { PRIMARY_APPEARANCE_INDEX, isArtStyleValue, removeLocationPromptSuffix, type ArtStyleValue } from '@/lib/constants'
+import { PRIMARY_APPEARANCE_INDEX, isArtStyleValue, removeLocationPromptSuffix, removePropPromptSuffix, type ArtStyleValue } from '@/lib/constants'
 import { decodeImageUrlsFromDb, encodeImageUrls } from '@/lib/contracts/image-urls-contract'
 import { deleteObject } from '@/lib/storage'
 import { resolveStorageKeyFromMediaValue } from '@/lib/media/service'
-import { updateCharacterAppearanceLabels, updateLocationImageLabels } from '@/lib/image-label'
+import { createProjectCharacterLabeledCopies, createProjectLocationLabeledCopies } from '@/lib/image-label'
 import type { AssetKind, AssetScope } from '@/lib/assets/contracts'
 import {
   normalizeLocationAvailableSlots,
@@ -29,6 +29,8 @@ import {
   deleteProjectLocationBackedAsset,
   type LocationBackedAssetKind,
 } from '@/lib/assets/services/location-backed-assets'
+import { resolvePropVisualDescription } from '@/lib/assets/prop-description'
+import { confirmProjectLocationBackedSelection } from '@/lib/assets/services/project-location-backed-selection'
 
 type AssetWriteAccess = {
   scope: AssetScope
@@ -163,7 +165,16 @@ async function submitGlobalAssetGenerateTask(input: AssetGenerateInput) {
   if (normalizedKind === 'location' && toNumber(input.body.imageIndex) === null) {
     const location = await prisma.globalLocation.findFirst({
       where: { id: input.assetId, userId: input.access.userId },
-      select: { name: true, summary: true },
+      select: {
+        name: true,
+        summary: true,
+        assetKind: true,
+        images: {
+          orderBy: { imageIndex: 'asc' },
+          take: 1,
+          select: { description: true },
+        },
+      },
     })
     if (!location) {
       throw new ApiError('NOT_FOUND')
@@ -171,13 +182,19 @@ async function submitGlobalAssetGenerateTask(input: AssetGenerateInput) {
     await ensureGlobalLocationImageSlots({
       locationId: input.assetId,
       count,
-      fallbackDescription: location.summary || location.name,
+      fallbackDescription: location.assetKind === 'prop'
+        ? resolvePropVisualDescription({
+          name: location.name,
+          summary: location.summary,
+          description: location.images[0]?.description ?? null,
+        })
+        : location.summary || location.name,
     })
   }
 
   const payloadBase: Record<string, unknown> = normalizedKind === 'character'
-    ? { ...input.body, id: input.assetId, type: normalizedKind, appearanceIndex, artStyle, count }
-    : { ...input.body, id: input.assetId, type: normalizedKind, artStyle, count }
+    ? { ...input.body, id: input.assetId, type: input.kind, appearanceIndex, artStyle, count }
+    : { ...input.body, id: input.assetId, type: input.kind, artStyle, count }
   const targetType = normalizedKind === 'character' ? 'GlobalCharacter' : 'GlobalLocation'
   const hasOutputAtStart = normalizedKind === 'character'
     ? await hasGlobalCharacterOutput({
@@ -241,7 +258,16 @@ async function submitProjectAssetGenerateTask(input: AssetGenerateInput) {
   if (normalizedKind === 'location' && imageIndex === null) {
     const location = await prisma.novelPromotionLocation.findUnique({
       where: { id: input.assetId },
-      select: { name: true, summary: true },
+      select: {
+        name: true,
+        summary: true,
+        assetKind: true,
+        images: {
+          orderBy: { imageIndex: 'asc' },
+          take: 1,
+          select: { description: true },
+        },
+      },
     })
     if (!location) {
       throw new ApiError('NOT_FOUND')
@@ -249,7 +275,13 @@ async function submitProjectAssetGenerateTask(input: AssetGenerateInput) {
     await ensureProjectLocationImageSlots({
       locationId: input.assetId,
       count,
-      fallbackDescription: location.summary || location.name,
+      fallbackDescription: location.assetKind === 'prop'
+        ? resolvePropVisualDescription({
+          name: location.name,
+          summary: location.summary,
+          description: location.images[0]?.description ?? null,
+        })
+        : location.summary || location.name,
     })
   }
 
@@ -275,8 +307,8 @@ async function submitProjectAssetGenerateTask(input: AssetGenerateInput) {
     ? projectModelConfig.characterModel
     : projectModelConfig.locationModel
   const payloadBase = artStyle
-    ? { ...input.body, type: normalizedKind, id: input.assetId, artStyle, count }
-    : { ...input.body, type: normalizedKind, id: input.assetId, count }
+    ? { ...input.body, type: input.kind, id: input.assetId, artStyle, count }
+    : { ...input.body, type: input.kind, id: input.assetId, count }
 
   let billingPayload: Record<string, unknown>
   try {
@@ -391,7 +423,7 @@ async function submitGlobalAssetModifyTask(input: AssetModifyInput) {
   const payload = {
     ...input.body,
     id: input.assetId,
-    type: normalizedKind,
+    type: input.kind,
     extraImageUrls: extraImageAudit.normalized,
     meta: {
       ...toObject(input.body.meta),
@@ -461,7 +493,7 @@ async function submitProjectAssetModifyTask(input: AssetModifyInput) {
   }
   const payload = {
     ...input.body,
-    type: normalizedKind,
+    type: input.kind,
     characterId: normalizedKind === 'character' ? input.assetId : undefined,
     locationId: normalizedKind === 'location' ? input.assetId : undefined,
     extraImageUrls: extraImageAudit.normalized,
@@ -624,12 +656,17 @@ async function selectProjectAssetRender(input: AssetSelectInput) {
     })
     return { success: true }
   }
+  const confirm = input.body.confirm === true
+  if (confirm) {
+    return confirmProjectLocationBackedSelection(input.assetId)
+  }
   const selectedIndex = toNumber(input.body.selectedIndex ?? input.body.imageIndex)
   const location = await prisma.novelPromotionLocation.findUnique({
     where: { id: input.assetId },
     include: { images: { orderBy: { imageIndex: 'asc' } } },
   })
   if (!location) throw new ApiError('NOT_FOUND')
+
   if (selectedIndex !== null) {
     const targetImage = location.images.find((image) => image.imageIndex === selectedIndex)
     if (!targetImage || !targetImage.imageUrl) {
@@ -803,7 +840,7 @@ async function copyCharacterFromGlobal(input: AssetCopyInput) {
   if (projectCharacter.appearances.length > 0) {
     await prisma.characterAppearance.deleteMany({ where: { characterId: input.targetId } })
   }
-  const updatedLabels = await updateCharacterAppearanceLabels(
+  const labeledCopies = await createProjectCharacterLabeledCopies(
     globalCharacter.appearances.map((appearance) => ({
       imageUrl: appearance.imageUrl,
       imageUrls: appearance.imageUrls || encodeImageUrls([]),
@@ -813,7 +850,7 @@ async function copyCharacterFromGlobal(input: AssetCopyInput) {
   )
   for (let index = 0; index < globalCharacter.appearances.length; index += 1) {
     const appearance = globalCharacter.appearances[index]
-    const labelUpdate = updatedLabels[index]
+    const labeledCopy = labeledCopies[index]
     const originalImageUrls = decodeImageUrlsFromDb(appearance.imageUrls, 'globalCharacterAppearance.imageUrls')
     await prisma.characterAppearance.create({
       data: {
@@ -822,8 +859,8 @@ async function copyCharacterFromGlobal(input: AssetCopyInput) {
         changeReason: appearance.changeReason,
         description: appearance.description,
         descriptions: appearance.descriptions,
-        imageUrl: labelUpdate?.imageUrl || appearance.imageUrl,
-        imageUrls: labelUpdate?.imageUrls || encodeImageUrls(originalImageUrls),
+        imageUrl: labeledCopy?.imageUrl || appearance.imageUrl,
+        imageUrls: labeledCopy?.imageUrls || encodeImageUrls(originalImageUrls),
         previousImageUrls: encodeImageUrls([]),
         selectedIndex: appearance.selectedIndex,
       },
@@ -857,21 +894,21 @@ async function copyLocationFromGlobal(input: AssetCopyInput) {
   if (projectLocation.images.length > 0) {
     await prisma.locationImage.deleteMany({ where: { locationId: input.targetId } })
   }
-  const updatedLabels = await updateLocationImageLabels(
+  const labeledCopies = await createProjectLocationLabeledCopies(
     globalLocation.images.map((image) => ({ imageUrl: image.imageUrl })),
     projectLocation.name,
   )
   const copiedImages: Array<{ id: string; imageIndex: number; imageUrl: string | null }> = []
   for (let index = 0; index < globalLocation.images.length; index += 1) {
     const image = globalLocation.images[index]
-    const labelUpdate = updatedLabels[index]
+    const labeledCopy = labeledCopies[index]
     const created = await prisma.locationImage.create({
       data: {
         locationId: input.targetId,
         imageIndex: image.imageIndex,
         description: image.description,
         availableSlots: image.availableSlots,
-        imageUrl: labelUpdate?.imageUrl || image.imageUrl,
+        imageUrl: labeledCopy?.imageUrl || image.imageUrl,
         isSelected: image.isSelected,
       },
     })
@@ -1065,7 +1102,7 @@ async function updateGlobalAssetVariant(input: AssetVariantUpdateInput) {
   if (input.kind === 'prop') {
     const trimmedDescription = normalizeString(input.body.description)
     if (!trimmedDescription) throw new ApiError('INVALID_PARAMS')
-    const cleanDescription = removeLocationPromptSuffix(trimmedDescription)
+    const cleanDescription = removePropPromptSuffix(trimmedDescription)
     const image = await prisma.globalLocationImage.update({
       where: { id: input.variantId },
       data: { description: cleanDescription },
@@ -1101,6 +1138,16 @@ async function updateProjectAssetVariant(input: AssetVariantUpdateInput) {
     })
     return { success: true }
   }
+  if (input.kind === 'prop') {
+    const trimmedDescription = normalizeString(input.body.description)
+    if (!trimmedDescription) throw new ApiError('INVALID_PARAMS')
+    const cleanDescription = removePropPromptSuffix(trimmedDescription)
+    const image = await prisma.locationImage.update({
+      where: { id: input.variantId },
+      data: { description: cleanDescription },
+    })
+    return { success: true, image }
+  }
   const trimmedDescription = normalizeString(input.body.description)
   if (!trimmedDescription) throw new ApiError('INVALID_PARAMS')
   const cleanDescription = removeLocationPromptSuffix(trimmedDescription)
@@ -1113,11 +1160,14 @@ async function updateProjectAssetVariant(input: AssetVariantUpdateInput) {
 
 export async function createAsset(input: AssetCreateInput) {
   const name = normalizeString(input.body.name)
+  const kind = requireLocationBackedKind(input.kind)
   const summary = normalizeString(input.body.summary || input.body.description)
-  if (!name || !summary) {
+  const description = kind === 'prop'
+    ? normalizeString(input.body.description)
+    : summary
+  if (!name || !summary || !description) {
     throw new ApiError('INVALID_PARAMS')
   }
-  const kind = requireLocationBackedKind(input.kind)
 
   if (input.access.scope === 'global') {
     const created = await createGlobalLocationBackedAsset({
@@ -1125,6 +1175,7 @@ export async function createAsset(input: AssetCreateInput) {
       folderId: normalizeString(input.body.folderId) || null,
       name,
       summary,
+      initialDescription: description,
       artStyle: normalizeString(input.body.artStyle) || null,
       kind,
     })
@@ -1142,6 +1193,7 @@ export async function createAsset(input: AssetCreateInput) {
     novelPromotionProjectId: project.id,
     name,
     summary,
+    initialDescription: description,
     kind,
   })
   return { success: true, assetId: created.id }

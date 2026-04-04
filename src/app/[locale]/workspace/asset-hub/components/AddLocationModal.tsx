@@ -93,8 +93,8 @@ export function AddLocationModal({ folderId, onClose, onSuccess }: AddLocationMo
 
     return (
         <div className="fixed inset-0 glass-overlay flex items-center justify-center z-50 p-4">
-            <div className="glass-surface-modal max-w-lg w-full max-h-[85vh] overflow-y-auto">
-                <div className="p-6">
+            <div className="glass-surface-modal max-w-lg w-full max-h-[85vh] overflow-hidden flex flex-col">
+                <div className="p-6 overflow-y-auto app-scrollbar flex-1 min-h-0">
                     {/* 标题 */}
                     <div className="flex items-center justify-between mb-6">
                         <h3 className="text-lg font-semibold text-[var(--glass-text-primary)]">

@@ -69,6 +69,7 @@
     "aiStoryExpand": "AI story expansion",
     "aiModifyAppearance": "Character description modify",
     "aiModifyLocation": "Location description modify",
+    "aiModifyProp": "Prop description modify",
     "aiModifyShotPrompt": "Shot prompt modify",
     "analyzeShotVariants": "Shot variant analysis",
     "aiCreateCharacter": "Project character design",
@@ -81,6 +82,7 @@
     "assetHubAiDesignLocation": "Asset hub location design",
     "assetHubAiModifyCharacter": "Asset hub character modify",
     "assetHubAiModifyLocation": "Asset hub location modify",
+    "assetHubAiModifyProp": "Asset hub prop modify",
     "assetHubReferenceToCharacter": "Asset hub reference to character"
   },
   "stage": {
