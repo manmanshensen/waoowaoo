@@ -13,8 +13,10 @@ interface StoryboardGroupActionsProps {
   isSubmittingStoryboardTextTask: boolean
   currentRunningCount: number
   pendingCount: number
+  pendingGroupCount: number
   onRegenerateText: () => void
   onGenerateAllIndividually: () => void
+  onGeneratePanelGroups: () => void
   onAddPanel: () => void
   onDeleteStoryboard: () => void
 }
@@ -25,8 +27,10 @@ export default function StoryboardGroupActions({
   isSubmittingStoryboardTextTask,
   currentRunningCount,
   pendingCount,
+  pendingGroupCount,
   onRegenerateText,
   onGenerateAllIndividually,
+  onGeneratePanelGroups,
   onAddPanel,
   onDeleteStoryboard,
 }: StoryboardGroupActionsProps) {
@@ -71,23 +75,47 @@ export default function StoryboardGroupActions({
       </GlassButton>
 
       {pendingCount > 0 && (
-        <GlassButton
-          variant="primary"
-          size="sm"
-          onClick={onGenerateAllIndividually}
-          disabled={currentRunningCount > 0}
-          title={t('group.generateMissingImages')}
-        >
-          {currentRunningCount > 0 ? (
-            <TaskStatusInline state={panelTaskRunningState} />
-          ) : (
-            <>
-              <AppIcon name="plus" className="h-3 w-3" />
-              <span>{t('group.generateAll')}</span>
-              <span className="px-1.5 py-0.5 text-[10px] font-medium rounded-full bg-white/25 text-white">{pendingCount}</span>
-            </>
+        <>
+          <GlassButton
+            variant="primary"
+            size="sm"
+            onClick={onGenerateAllIndividually}
+            disabled={currentRunningCount > 0}
+            title={t('group.generateMissingImages')}
+          >
+            {currentRunningCount > 0 ? (
+              <TaskStatusInline state={panelTaskRunningState} />
+            ) : (
+              <>
+                <AppIcon name="plus" className="h-3 w-3" />
+                <span>{t('group.generateAll')}</span>
+                <span className="px-1.5 py-0.5 text-[10px] font-medium rounded-full bg-white/25 text-white">{pendingCount}</span>
+              </>
+            )}
+          </GlassButton>
+
+          {pendingGroupCount > 0 && (
+            <GlassButton
+              variant="secondary"
+              size="sm"
+              onClick={onGeneratePanelGroups}
+              disabled={currentRunningCount > 0 || isSubmittingStoryboardTask}
+              title={t('group.generateCombinedImages')}
+            >
+              {currentRunningCount > 0 ? (
+                <TaskStatusInline state={panelTaskRunningState} />
+              ) : (
+                <>
+                  <AppIcon name="imageLandscape" className="h-3 w-3" />
+                  <span>{t('group.generateCombined')}</span>
+                  <span className="px-1.5 py-0.5 text-[10px] font-medium rounded-full bg-black/10 text-[var(--glass-text-primary)]">
+                    {pendingGroupCount}
+                  </span>
+                </>
+              )}
+            </GlassButton>
           )}
-        </GlassButton>
+        </>
       )}
 
       <GlassButton
@@ -112,4 +140,3 @@ export default function StoryboardGroupActions({
     </div>
   )
 }
-

@@ -168,7 +168,15 @@ export function useStoryboardPanelAssetActions({
     },
     [setPanelLocation, updatePanelEdit],
   )
-  const { runningCount, pendingPanelCount, pendingGroupCount, handleGenerateAllPanels, handleGeneratePanelGroups } =
+  const {
+    runningCount,
+    pendingPanelCount,
+    pendingGroupCount,
+    getPendingPanelGroupsForStoryboard,
+    handleGenerateAllPanels,
+    handleGeneratePanelGroups,
+    handleGenerateStoryboardPanelGroups,
+  } =
     useStoryboardBatchPanelGeneration({
       sortedStoryboards,
       submittingPanelImageIds,
@@ -189,7 +197,9 @@ export function useStoryboardPanelAssetActions({
     runningCount,
     pendingPanelCount,
     pendingGroupCount,
+    getPendingPanelGroupsForStoryboard,
     handleGenerateAllPanels,
     handleGeneratePanelGroups,
+    handleGenerateStoryboardPanelGroups,
   }
 }

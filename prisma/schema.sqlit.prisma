@@ -253,6 +253,9 @@ model NovelPromotionProject {
   locationModel   String? // 用户配置的场景图片模型
   storyboardModel String? // 用户配置的分镜图片模型
   combinedStoryboardModel String? // 用户配置的合并分镜图片模型
+  combinedStoryboard1x1Model String? // 用户配置的 1x1 合并分镜图片模型
+  combinedStoryboard2x2Model String? // 用户配置的 2x2 合并分镜图片模型
+  combinedStoryboard3x3Model String? // 用户配置的 3x3 合并分镜图片模型
   editModel       String? // 用户配置的修图/编辑模型
   videoResolution String                    @default("720p")
   capabilityOverrides String?
@@ -260,6 +263,9 @@ model NovelPromotionProject {
   lastEpisodeId   String?
   imageResolution String                    @default("2K")
   combinedStoryboardResolution String       @default("4K")
+  combinedStoryboard1x1Resolution String    @default("1K")
+  combinedStoryboard2x2Resolution String    @default("2K")
+  combinedStoryboard3x3Resolution String    @default("4K")
   importStatus    String?
   characters      NovelPromotionCharacter[]
   episodes        NovelPromotionEpisode[]
@@ -430,6 +436,9 @@ model UserPreference {
   locationModel   String? // 用户配置的场景图片模型
   storyboardModel String? // 用户配置的分镜图片模型
   combinedStoryboardModel String? // 用户配置的合并分镜图片模型
+  combinedStoryboard1x1Model String? // 用户配置的 1x1 合并分镜图片模型
+  combinedStoryboard2x2Model String? // 用户配置的 2x2 合并分镜图片模型
+  combinedStoryboard3x3Model String? // 用户配置的 3x3 合并分镜图片模型
   editModel       String? // 用户配置的修图模型
   videoModel      String? // 用户配置的视频模型
   audioModel      String? // 用户配置的语音模型
@@ -446,6 +455,9 @@ model UserPreference {
   updatedAt       DateTime @default(now()) @updatedAt
   imageResolution String   @default("2K")
   combinedStoryboardResolution String @default("4K")
+  combinedStoryboard1x1Resolution String @default("1K")
+  combinedStoryboard2x2Resolution String @default("2K")
+  combinedStoryboard3x3Resolution String @default("4K")
   capabilityDefaults String?
 
   // API Key 配置（极简版）

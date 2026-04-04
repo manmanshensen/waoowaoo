@@ -167,8 +167,10 @@ export function useStoryboardStageController({
     runningCount,
     pendingPanelCount,
     pendingGroupCount,
+    getPendingPanelGroupsForStoryboard,
     handleGenerateAllPanels,
     handleGeneratePanelGroups,
+    handleGenerateStoryboardPanelGroups,
   } = useStoryboardPanelAssetActions({
     clips,
     characters,
@@ -212,6 +214,7 @@ export function useStoryboardStageController({
     getDefaultAssetsForClip, handleEditSubmit, handlePanelUpdate, handleAddCharacter, handleSetLocation, handleRemoveCharacter, handleRemoveLocation,
     retrySave,
     updatePhotographyPlanMutation, updatePanelActingNotesMutation,
-    addingStoryboardGroupState, transitioningState, runningCount, pendingPanelCount, pendingGroupCount, handleGenerateAllPanels, handleGeneratePanelGroups,
+    addingStoryboardGroupState, transitioningState, runningCount, pendingPanelCount, pendingGroupCount,
+    getPendingPanelGroupsForStoryboard, handleGenerateAllPanels, handleGeneratePanelGroups, handleGenerateStoryboardPanelGroups,
   }
 }

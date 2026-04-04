@@ -17,6 +17,12 @@ const utilsMock = vi.hoisted(() => ({
     storyboardModel: 'storyboard-model-1',
     combinedStoryboardModel: 'storyboard-group-model-1',
     combinedStoryboardResolution: '4K',
+    combinedStoryboard1x1Model: 'storyboard-group-model-1x1',
+    combinedStoryboard2x2Model: 'storyboard-group-model-2x2',
+    combinedStoryboard3x3Model: 'storyboard-group-model-3x3',
+    combinedStoryboard1x1Resolution: '1K',
+    combinedStoryboard2x2Resolution: '2K',
+    combinedStoryboard3x3Resolution: '4K',
     artStyle: 'realistic',
   })),
   resolveImageSourceFromGeneration: vi.fn(),
@@ -69,6 +75,7 @@ vi.mock('@/lib/prompt-i18n', () => promptMock)
 vi.mock('@/lib/storage', () => ({ toFetchableUrl: vi.fn((value: string) => value) }))
 vi.mock('@/lib/constants', () => ({ getArtStylePrompt: vi.fn(() => 'realistic style') }))
 
+import { OutboundImageNormalizeError } from '@/lib/media/outbound-image'
 import { handlePanelGroupImageTask } from '@/lib/workers/handlers/panel-group-image-task-handler'
 
 function buildJob(payload: Record<string, unknown>): Job<TaskJobData> {
@@ -180,5 +187,50 @@ describe('worker panel-group-image-task-handler behavior', () => {
         candidateImages: null,
       },
     })
+  })
+
+  it('normalizes unsupported aspect ratio for grsai panel-group models', async () => {
+    await handlePanelGroupImageTask(buildJob({
+      panelIds: ['panel-1', 'panel-2'],
+      imageModel: 'grsai::nano-banana-2-4k-cl',
+      resolution: '4K',
+    }))
+
+    expect(utilsMock.resolveImageSourceFromGeneration).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        modelId: 'grsai::nano-banana-2-4k-cl',
+        options: expect.objectContaining({
+          resolution: '4K',
+          aspectRatio: '5:4',
+        }),
+      }),
+    )
+  })
+
+  it('continues without references when every reference image fails normalization', async () => {
+    outboundMock.normalizeReferenceImagesForGeneration.mockRejectedValueOnce(
+      new OutboundImageNormalizeError({
+        code: 'OUTBOUND_IMAGE_REFERENCE_ALL_FAILED',
+        stage: 'normalize_reference',
+        input: 'candidates=2',
+        message: 'all reference images failed to normalize',
+      }),
+    )
+
+    await handlePanelGroupImageTask(buildJob({
+      panelIds: ['panel-1', 'panel-2'],
+      imageModel: 'storyboard-group-model-1',
+      resolution: '4K',
+    }))
+
+    expect(utilsMock.resolveImageSourceFromGeneration).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        options: expect.objectContaining({
+          referenceImages: [],
+        }),
+      }),
+    )
   })
 })

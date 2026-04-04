@@ -45,6 +45,8 @@
         "aiAnalyzing": "AI Analyzing...",
         "regenerateText": "Regenerate Text",
         "generateMissingImages": "Generate all panels without images in this segment",
+        "generateCombined": "Combined Generate",
+        "generateCombinedImages": "Generate all missing panels in this segment as combined sheets",
         "segment": "Segment",
         "addAtStart": "Add new storyboard group at the start",
         "insertHere": "Insert new storyboard group here"
