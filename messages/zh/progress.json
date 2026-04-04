@@ -44,6 +44,7 @@
   "taskType": {
     "generic": "任务",
     "imagePanel": "分镜图片",
+    "imagePanelGroup": "分镜合并图片",
     "imageCharacter": "角色图片",
     "imageLocation": "场景图片",
     "videoPanel": "视频生成",
@@ -87,7 +88,9 @@
     "generateCharacterImage": "生成角色图片",
     "generateLocationImage": "生成场景图片",
     "generatePanelCandidate": "生成候选分镜图",
+    "generatePanelGroup": "生成合并分镜图",
     "generatePanelVideo": "生成分镜视频",
+    "splitPanelGroup": "拆分合并分镜图",
     "generateVoiceSubmit": "提交配音任务",
     "generateVoicePersist": "保存配音结果",
     "voiceDesignSubmit": "提交声音设计任务",

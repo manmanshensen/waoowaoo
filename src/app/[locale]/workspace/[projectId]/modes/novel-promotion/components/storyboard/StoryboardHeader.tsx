@@ -11,9 +11,11 @@ interface StoryboardHeaderProps {
   isDownloadingImages: boolean
   runningCount: number
   pendingPanelCount: number
+  pendingGroupCount: number
   isBatchSubmitting: boolean
   onDownloadAllImages: () => void
   onGenerateAllPanels: () => void
+  onGeneratePanelGroups: () => void
   onBack: () => void
 }
 
@@ -23,9 +25,11 @@ export default function StoryboardHeader({
   isDownloadingImages,
   runningCount,
   pendingPanelCount,
+  pendingGroupCount,
   isBatchSubmitting,
   onDownloadAllImages,
   onGenerateAllPanels,
+  onGeneratePanelGroups,
   onBack
 }: StoryboardHeaderProps) {
   const t = useTranslations('storyboard')
@@ -71,6 +75,17 @@ export default function StoryboardHeader({
             disabled={runningCount > 0}
           >
             {t('header.generateAllPanels')} ({pendingPanelCount})
+          </GlassButton>
+        ) : null}
+
+        {pendingGroupCount > 0 ? (
+          <GlassButton
+            variant="secondary"
+            loading={isBatchSubmitting}
+            onClick={onGeneratePanelGroups}
+            disabled={runningCount > 0}
+          >
+            {t('header.generatePanelGroups')} ({pendingGroupCount})
           </GlassButton>
         ) : null}
 

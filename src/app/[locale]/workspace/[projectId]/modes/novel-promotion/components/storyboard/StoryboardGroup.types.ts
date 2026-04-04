@@ -32,6 +32,8 @@ export interface StoryboardGroupProps {
   onAddPanel: () => void
   onDeleteStoryboard: () => void
   onGenerateAllIndividually: () => void
+  pendingGroupCount: number
+  onGeneratePanelGroups: () => void
   onPreviewImage: (url: string) => void
   onCloseError: () => void
   getPanelEditData: (panel: StoryboardPanel) => PanelEditData

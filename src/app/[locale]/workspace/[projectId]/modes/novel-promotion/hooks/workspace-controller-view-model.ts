@@ -24,6 +24,14 @@ interface ProjectSnapshotInput {
   characterModel: string | undefined
   locationModel: string | undefined
   storyboardModel: string | undefined
+  combinedStoryboardModel: string | null | undefined
+  combinedStoryboardResolution: string | null | undefined
+  combinedStoryboard1x1Model: string | null | undefined
+  combinedStoryboard2x2Model: string | null | undefined
+  combinedStoryboard3x3Model: string | null | undefined
+  combinedStoryboard1x1Resolution: string | null | undefined
+  combinedStoryboard2x2Resolution: string | null | undefined
+  combinedStoryboard3x3Resolution: string | null | undefined
   editModel: string | undefined
   videoModel: string | undefined
   audioModel: string | undefined

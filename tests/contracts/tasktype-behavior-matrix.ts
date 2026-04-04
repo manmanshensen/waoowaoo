@@ -74,6 +74,7 @@ function resolveApiContractByTaskType(taskType: TaskType): string {
   }
   if (
     taskType === 'image_panel'
+    || taskType === 'image_panel_group'
     || taskType === 'image_character'
     || taskType === 'image_location'
     || taskType === 'video_panel'

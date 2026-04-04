@@ -43,6 +43,8 @@ export default function StoryboardGroup({
   onAddPanel,
   onDeleteStoryboard,
   onGenerateAllIndividually,
+  pendingGroupCount,
+  onGeneratePanelGroups,
   onPreviewImage,
   onCloseError,
   getPanelEditData,
@@ -181,6 +183,8 @@ export default function StoryboardGroup({
           pendingCount={pendingCount}
           onRegenerateText={onRegenerateText}
           onGenerateAllIndividually={onGenerateAllIndividually}
+          pendingGroupCount={pendingGroupCount}
+          onGeneratePanelGroups={onGeneratePanelGroups}
           onAddPanel={onAddPanel}
           onDeleteStoryboard={onDeleteStoryboard}
         />

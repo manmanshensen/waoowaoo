@@ -43,6 +43,7 @@ const ALL_QUEUES = [imageQueue, videoQueue, voiceQueue, textQueue]
 
 const IMAGE_TYPES = new Set<TaskType>([
   TASK_TYPE.IMAGE_PANEL,
+  TASK_TYPE.IMAGE_PANEL_GROUP,
   TASK_TYPE.IMAGE_CHARACTER,
   TASK_TYPE.IMAGE_LOCATION,
   TASK_TYPE.PANEL_VARIANT,

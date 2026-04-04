@@ -88,6 +88,12 @@ function NovelPromotionWorkspaceContent(props: NovelPromotionWorkspaceProps) {
         characterModel={vm.project.characterModel}
         locationModel={vm.project.locationModel}
         storyboardModel={vm.project.storyboardModel}
+        combinedStoryboard1x1Model={vm.project.combinedStoryboard1x1Model}
+        combinedStoryboard2x2Model={vm.project.combinedStoryboard2x2Model}
+        combinedStoryboard3x3Model={vm.project.combinedStoryboard3x3Model}
+        combinedStoryboard1x1Resolution={vm.project.combinedStoryboard1x1Resolution}
+        combinedStoryboard2x2Resolution={vm.project.combinedStoryboard2x2Resolution}
+        combinedStoryboard3x3Resolution={vm.project.combinedStoryboard3x3Resolution}
         editModel={vm.project.editModel}
         videoModel={vm.project.videoModel}
         audioModel={vm.project.audioModel}

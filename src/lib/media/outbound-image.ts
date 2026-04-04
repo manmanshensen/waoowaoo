@@ -2,7 +2,7 @@ import path from 'node:path'
 import { createScopedLogger } from '@/lib/logging/core'
 import { resolveStorageKeyFromMediaValue } from '@/lib/media/service'
 
-type StorageHelpers = Pick<typeof import('@/lib/storage'), 'getSignedUrl' | 'toFetchableUrl'>
+type StorageHelpers = Pick<typeof import('@/lib/storage'), 'getSignedObjectUrl' | 'toFetchableUrl'>
 
 type InputIssueReason =
   | 'next_image_unwrapped'
@@ -88,7 +88,7 @@ let storageHelpersPromise: Promise<StorageHelpers> | null = null
 async function getStorageHelpers(): Promise<StorageHelpers> {
   if (!storageHelpersPromise) {
     storageHelpersPromise = import('@/lib/storage').then((mod) => ({
-      getSignedUrl: mod.getSignedUrl,
+      getSignedObjectUrl: mod.getSignedObjectUrl,
       toFetchableUrl: mod.toFetchableUrl,
     }))
   }
@@ -279,8 +279,8 @@ function guessContentType(input: string, contentTypeHeader: string | null, buffe
 }
 
 async function signStorageKey(storageKey: string): Promise<string> {
-  const { getSignedUrl, toFetchableUrl } = await getStorageHelpers()
-  return toFetchableUrl(getSignedUrl(storageKey, SIGNED_URL_TTL_SECONDS))
+  const { getSignedObjectUrl, toFetchableUrl } = await getStorageHelpers()
+  return toFetchableUrl(await getSignedObjectUrl(storageKey, SIGNED_URL_TTL_SECONDS))
 }
 
 async function toFetchableAbsoluteUrl(value: string): Promise<string> {
@@ -328,6 +328,25 @@ async function normalizeMediaRouteUrl(input: string): Promise<string | null> {
   return await signStorageKey(storageKey)
 }
 
+async function normalizeStorageApiUrl(input: string): Promise<string | null> {
+  const parsed = toUrlMaybe(input)
+  if (!parsed || parsed.pathname !== '/api/storage/sign') {
+    return null
+  }
+
+  const storageKey = parsed.searchParams.get('key')?.trim()
+  if (!storageKey) {
+    throw new OutboundImageNormalizeError({
+      code: 'OUTBOUND_IMAGE_UNSUPPORTED_INPUT',
+      stage: 'normalize_original',
+      input,
+      message: 'storage sign api url is missing key',
+    })
+  }
+
+  return await signStorageKey(storageKey)
+}
+
 export function unwrapNextImageDisplayUrl(input: string): string {
   return unwrapNextImageInternal(input)
 }
@@ -350,6 +369,11 @@ export async function normalizeToOriginalMediaUrl(input: string): Promise<string
   const mediaRouteUrl = await normalizeMediaRouteUrl(unwrappedInput)
   if (mediaRouteUrl) {
     return mediaRouteUrl
+  }
+
+  const storageApiUrl = await normalizeStorageApiUrl(unwrappedInput)
+  if (storageApiUrl) {
+    return storageApiUrl
   }
 
   if (unwrappedInput.startsWith('/')) {

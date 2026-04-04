@@ -10,6 +10,7 @@ import {
   useRefreshEpisodeData,
   useRefreshStoryboards,
   useRegenerateProjectPanelImage,
+  useRegenerateProjectPanelGroupImage,
   useModifyProjectStoryboardImage,
   useUploadProjectPanelImage,
   useDownloadProjectImages,
@@ -49,6 +50,7 @@ export function useStoryboardImageGeneration({
   const refreshEpisode = useRefreshEpisodeData(projectId, episodeId ?? null)
   const refreshStoryboards = useRefreshStoryboards(episodeId ?? null)
   const regeneratePanelMutation = useRegenerateProjectPanelImage(projectId)
+  const regeneratePanelGroupMutation = useRegenerateProjectPanelGroupImage(projectId)
   const modifyPanelMutation = useModifyProjectStoryboardImage(projectId)
   const uploadPanelImageMutation = useUploadProjectPanelImage(projectId)
   const downloadImagesMutation = useDownloadProjectImages(projectId)
@@ -147,6 +149,37 @@ export function useStoryboardImageGeneration({
     setIsDownloadingImages,
   })
 
+  const regeneratePanelGroupImages = useCallback(async (panelIds: string[]) => {
+    if (panelIds.length === 0) return
+
+    setSubmittingPanelImageIds((previous) => {
+      const next = new Set(previous)
+      panelIds.forEach((panelId) => next.add(panelId))
+      return next
+    })
+
+    try {
+      await regeneratePanelGroupMutation.mutateAsync({ panelIds })
+      if (onSilentRefresh) {
+        await onSilentRefresh()
+      }
+      refreshEpisode()
+      refreshStoryboards()
+    } catch (error) {
+      setSubmittingPanelImageIds((previous) => {
+        const next = new Set(previous)
+        panelIds.forEach((panelId) => next.delete(panelId))
+        return next
+      })
+      throw error
+    }
+  }, [
+    onSilentRefresh,
+    refreshEpisode,
+    refreshStoryboards,
+    regeneratePanelGroupMutation,
+  ])
+
   const uploadPanelImage = useCallback(async (panelId: string, file: File) => {
     setModifyingPanels((previous) => new Set(previous).add(panelId))
     try {
@@ -236,6 +269,7 @@ export function useStoryboardImageGeneration({
     setPreviewImage,
     regeneratePanelImage,
     regenerateAllPanelsIndividually,
+    regeneratePanelGroupImages,
     selectPanelCandidate: confirmPanelCandidate,
     selectPanelCandidateIndex,
     cancelPanelCandidate,

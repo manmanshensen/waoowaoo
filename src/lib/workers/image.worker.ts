@@ -10,6 +10,7 @@ import {
   handleAssetHubModifyTask,
   handleCharacterImageTask,
   handleLocationImageTask,
+  handlePanelGroupImageTask,
   handleModifyAssetImageTask,
   handlePanelImageTask,
   handlePanelVariantTask,
@@ -40,6 +41,8 @@ async function processImageTask(job: Job<TaskJobData>) {
       return await handleAssetHubModifyTask(job)
     case TASK_TYPE.IMAGE_PANEL:
       return await handlePanelImageTask(job)
+    case TASK_TYPE.IMAGE_PANEL_GROUP:
+      return await handlePanelGroupImageTask(job)
     case TASK_TYPE.PANEL_VARIANT:
       return await handlePanelVariantTask(job)
     default:

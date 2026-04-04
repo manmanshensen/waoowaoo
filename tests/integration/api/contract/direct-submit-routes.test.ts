@@ -91,7 +91,24 @@ const prismaMock = vi.hoisted(() => ({
   },
   novelPromotionPanel: {
     findFirst: vi.fn(async () => ({ id: 'panel-1' })),
-    findMany: vi.fn(async () => []),
+    findMany: vi.fn(async (args?: { where?: { id?: { in?: string[] } } }) => {
+      const ids = args?.where?.id?.in || []
+      if (ids.length > 0) {
+        return ids.map((id, index) => ({
+          id,
+          storyboardId: 'storyboard-1',
+          panelIndex: index,
+          storyboard: {
+            episode: {
+              novelPromotionProject: {
+                projectId: 'project-1',
+              },
+            },
+          },
+        }))
+      }
+      return []
+    }),
     findUnique: vi.fn(async ({ where }: { where?: { id?: string } }) => {
       const id = where?.id || 'panel-1'
       if (id === 'panel-src') {
@@ -500,6 +517,14 @@ const DIRECT_CASES: ReadonlyArray<DirectRouteCase> = [
     expectedProjectId: 'project-1',
   },
   {
+    routeFile: 'src/app/api/novel-promotion/[projectId]/regenerate-panel-group-image/route.ts',
+    body: { panelIds: ['panel-1', 'panel-2', 'panel-3'] },
+    params: { projectId: 'project-1' },
+    expectedTaskType: TASK_TYPE.IMAGE_PANEL_GROUP,
+    expectedTargetType: 'NovelPromotionPanel',
+    expectedProjectId: 'project-1',
+  },
+  {
     routeFile: 'src/app/api/novel-promotion/[projectId]/regenerate-panel-image/route.ts',
     body: { panelId: 'panel-1', count: 1 },
     params: { projectId: 'project-1' },
@@ -565,7 +590,7 @@ describe('api contract - direct submit routes (behavior)', () => {
   })
 
   it('keeps expected coverage size', () => {
-    expect(DIRECT_CASES.length).toBe(20)
+    expect(DIRECT_CASES.length).toBe(21)
   })
 
   for (const routeCase of DIRECT_CASES) {
@@ -607,4 +632,23 @@ describe('api contract - direct submit routes (behavior)', () => {
       }
     })
   }
+
+  it('regenerate-panel-group-image -> hashes dedupeKey for 9-panel groups', async () => {
+    const routeCase = DIRECT_CASES.find(
+      (item) => item.routeFile === 'src/app/api/novel-promotion/[projectId]/regenerate-panel-group-image/route.ts',
+    )
+    expect(routeCase).toBeDefined()
+
+    const res = await invokePostRoute({
+      ...routeCase!,
+      body: {
+        panelIds: Array.from({ length: 9 }, (_, index) => `panel-${index + 1}-${'x'.repeat(48)}`),
+      },
+    })
+
+    expect(res.status).toBe(200)
+    const submitArg = submitTaskMock.mock.calls.at(-1)?.[0] as Record<string, unknown> | undefined
+    expect(submitArg?.dedupeKey).toMatch(/^image_panel_group:[0-9a-f]{16}$/)
+    expect((submitArg?.dedupeKey as string | undefined)?.length).toBeLessThanOrEqual(191)
+  })
 })

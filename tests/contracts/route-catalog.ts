@@ -112,6 +112,7 @@ const ROUTE_FILES = [
   'src/app/api/novel-promotion/[projectId]/photography-plan/route.ts',
   'src/app/api/novel-promotion/[projectId]/reference-to-character/route.ts',
   'src/app/api/novel-promotion/[projectId]/regenerate-group/route.ts',
+  'src/app/api/novel-promotion/[projectId]/regenerate-panel-group-image/route.ts',
   'src/app/api/novel-promotion/[projectId]/regenerate-panel-image/route.ts',
   'src/app/api/novel-promotion/[projectId]/regenerate-single-image/route.ts',
   'src/app/api/novel-promotion/[projectId]/regenerate-storyboard-text/route.ts',
