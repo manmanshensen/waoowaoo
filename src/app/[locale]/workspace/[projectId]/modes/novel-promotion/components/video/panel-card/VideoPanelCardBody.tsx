@@ -126,15 +126,28 @@ export default function VideoPanelCardBody({ runtime }: VideoPanelCardBodyProps)
               <div className="flex items-center gap-2">
                 <span className="text-xs font-medium text-[var(--glass-text-tertiary)]">{t('promptModal.promptLabel')}</span>
                 {!promptEditor.isEditing && (
-                  <button
-                    onClick={() => void handleCopyPrompt()}
-                    className="inline-flex items-center gap-1 text-[var(--glass-text-tertiary)] hover:text-[var(--glass-tone-info-fg)] transition-colors p-0.5"
-                    title={copySucceeded ? t('panelCard.copiedVideoPrompt') : t('panelCard.copyVideoPrompt')}
-                    type="button"
-                  >
-                    <AppIcon name={copySucceeded ? 'clipboardCheck' : 'copy'} className="w-3.5 h-3.5" />
-                    <span className="text-[10px]">{copySucceeded ? t('panelCard.copiedVideoPrompt') : t('panelCard.copyVideoPrompt')}</span>
-                  </button>
+                  <>
+                    {actions.onOptimizePrompt && (
+                      <button
+                        onClick={actions.onOptimizePrompt}
+                        className="inline-flex items-center gap-1 text-[var(--glass-text-tertiary)] hover:text-[var(--glass-tone-info-fg)] transition-colors p-0.5"
+                        title={t('panelCard.optimizePrompt')}
+                        type="button"
+                      >
+                        <AppIcon name="sparklesAlt" className="w-3.5 h-3.5" />
+                        <span className="text-[10px]">{t('panelCard.optimizePrompt')}</span>
+                      </button>
+                    )}
+                    <button
+                      onClick={() => void handleCopyPrompt()}
+                      className="inline-flex items-center gap-1 text-[var(--glass-text-tertiary)] hover:text-[var(--glass-tone-info-fg)] transition-colors p-0.5"
+                      title={copySucceeded ? t('panelCard.copiedVideoPrompt') : t('panelCard.copyVideoPrompt')}
+                      type="button"
+                    >
+                      <AppIcon name={copySucceeded ? 'clipboardCheck' : 'copy'} className="w-3.5 h-3.5" />
+                      <span className="text-[10px]">{copySucceeded ? t('panelCard.copiedVideoPrompt') : t('panelCard.copyVideoPrompt')}</span>
+                    </button>
+                  </>
                 )}
               </div>
               {!promptEditor.isEditing && (

@@ -1,10 +1,11 @@
 import fs from 'fs'
 import path from 'path'
 
-export type AssistantPromptId = 'api-config-template' | 'tutorial'
+export type AssistantPromptId = 'api-config-template' | 'tutorial' | 'sd2-pe'
 
 const PROMPT_FILE_BY_ID: Record<AssistantPromptId, string> = {
   'api-config-template': 'api-config-template.system.txt',
+  'sd2-pe': 'sd2-pe.system.txt',
   tutorial: 'tutorial.system.txt',
 }
 

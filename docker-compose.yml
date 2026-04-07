@@ -184,8 +184,8 @@ services:
       MINIO_ACCESS_KEY: "minioadmin"
       MINIO_SECRET_KEY: "minioadmin"
       MINIO_FORCE_PATH_STYLE: "true"
-      INTERNAL_APP_URL: "http://host.docker.internal:13001"
-      APP_INTERNAL_BASE_URL: "http://host.docker.internal:13001"
+      INTERNAL_APP_URL: "http://127.0.0.1:3000"
+      APP_INTERNAL_BASE_URL: "http://127.0.0.1:3000"
       NEXTAUTH_URL: "http://localhost:13001"
       NEXTAUTH_SECRET: "waoowaoo-default-secret-2026"
       CRON_SECRET: "waoowaoo-docker-cron-secret"
@@ -218,6 +218,7 @@ services:
       WEB_GEMINI_INTERNAL_BASE_URL: "http://host.docker.internal:4000/v1"
       CHOKIDAR_USEPOLLING: "true"
       WATCHPACK_POLLING: "true"
+      NEXT_DIST_DIR: "/tmp/waoowaoo-next-dev"
     ports:
       - "13001:3000"
     extra_hosts:
@@ -239,8 +240,10 @@ services:
       sh -c "
         touch /app/.env &&
         npm run storage:init &&
-        npm run build &&
-        npm run start:next
+        {
+          (sleep 20 && sh /app/scripts/dev-warmup.sh) &
+          npm run dev:next:stable
+        }
       "
 
   app-dev-worker:

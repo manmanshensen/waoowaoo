@@ -41,6 +41,7 @@ export function useVideoPanelActions({
   isSavingPrompt,
   onUpdateLocalPrompt,
   onSavePrompt,
+  onOptimizePrompt,
   onGenerateVideo,
   onUpdatePanelVideoModel,
   onToggleLink,
@@ -145,6 +146,7 @@ export function useVideoPanelActions({
       videoRatio,
     },
     actions: {
+      onOptimizePrompt,
       onGenerateVideo,
       onUpdatePanelVideoModel,
       onToggleLink,

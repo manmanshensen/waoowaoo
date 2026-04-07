@@ -2,6 +2,7 @@ import type { NextConfig } from "next";
 import createNextIntlPlugin from 'next-intl/plugin';
 
 const withNextIntl = createNextIntlPlugin('./src/i18n.ts');
+const nextDistDir = process.env.NEXT_DIST_DIR?.trim()
 
 const nextConfig: NextConfig = {
   // 已删除 ignoreBuildErrors / ignoreDuringBuilds，构建保持严格门禁
@@ -10,6 +11,7 @@ const nextConfig: NextConfig = {
     'http://192.168.31.218:3000',
     'http://192.168.31.*:3000',
   ],
+  ...(nextDistDir ? { distDir: nextDistDir } : {}),
 };
 
 export default withNextIntl(nextConfig);

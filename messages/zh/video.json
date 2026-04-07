@@ -35,6 +35,7 @@
     "regenerateLipSync": "重新生成口型同步",
     "editPrompt": "编辑提示词",
     "clickToEditPrompt": "点击编辑提示词...",
+    "optimizePrompt": "优化提示词",
     "copyVideoPrompt": "复制视频提示词",
     "copiedVideoPrompt": "已复制视频提示词",
     "uploadVideo": "上传视频",
@@ -71,6 +72,20 @@
     "tip": "提示：视频模型不识别角色名字，请用外貌特征描述，如\"黑发蓝眸的年轻男子\"而非\"Victor\"",
     "save": "保存",
     "cancel": "取消"
+  },
+  "promptOptimizer": {
+    "title": "优化镜头 #{number} 视频提示词",
+    "subtitle": "已自动携带当前 panel 的完整 JSON，并会立即执行一次默认优化。",
+    "close": "关闭",
+    "userLabel": "你",
+    "reasoningTitle": "推理过程",
+    "reasoningExpand": "展开",
+    "reasoningCollapse": "收起",
+    "emptyAssistantMessage": "你可以继续补充要求，例如固定机位、字幕出现方式、商品露出时机等。",
+    "inputPlaceholder": "继续补充你想强调的约束...",
+    "send": "发送",
+    "pending": "优化中...",
+    "defaultRequest": "请基于当前 panel 的完整 JSON，优化当前视频提示词，直接输出可复制的最终提示词正文。"
   },
   "toolbar": {
     "title": "成片生成",

@@ -35,6 +35,7 @@
     "regenerateLipSync": "Regenerate Lip Sync",
     "editPrompt": "Edit Prompt",
     "clickToEditPrompt": "Click to edit prompt...",
+    "optimizePrompt": "Optimize Prompt",
     "copyVideoPrompt": "Copy Video Prompt",
     "copiedVideoPrompt": "Video Prompt Copied",
     "uploadVideo": "Upload Video",
@@ -71,6 +72,20 @@
     "tip": "Tip: Video models don't recognize character names, use appearance descriptions like \"young man with black hair and blue eyes\" instead of \"Victor\"",
     "save": "Save",
     "cancel": "Cancel"
+  },
+  "promptOptimizer": {
+    "title": "Optimize Shot #{number} Video Prompt",
+    "subtitle": "The full panel JSON is attached automatically, and a default optimization request will be sent right away.",
+    "close": "Close",
+    "userLabel": "You",
+    "reasoningTitle": "Reasoning",
+    "reasoningExpand": "Expand",
+    "reasoningCollapse": "Collapse",
+    "emptyAssistantMessage": "You can keep refining the request, such as fixed camera, subtitle timing, or product reveal constraints.",
+    "inputPlaceholder": "Add any extra constraints you want to emphasize...",
+    "send": "Send",
+    "pending": "Optimizing...",
+    "defaultRequest": "Based on the full panel JSON, optimize the current video prompt and return only the final copyable prompt text."
   },
   "toolbar": {
     "title": "Video Generation",

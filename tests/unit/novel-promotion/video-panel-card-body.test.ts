@@ -29,6 +29,7 @@ function createRuntime(overrides: Partial<VideoPanelRuntime> = {}): VideoPanelRu
     if (key === 'promptModal.promptLabel') return '视频提示词'
     if (key === 'promptModal.placeholder') return '输入首尾帧视频提示词...'
     if (key === 'panelCard.clickToEditPrompt') return '点击编辑提示词...'
+    if (key === 'panelCard.optimizePrompt') return '优化提示词'
     if (key === 'panelCard.selectModel') return '选择模型'
     if (key === 'panelCard.generateVideo') return '生成视频'
     if (key === 'panelCard.unknownShotType') return '未知镜头'
@@ -129,6 +130,7 @@ function createRuntime(overrides: Partial<VideoPanelRuntime> = {}): VideoPanelRu
       videoRatio: '9:16',
     },
     actions: {
+      onOptimizePrompt: () => undefined,
       onGenerateVideo: () => undefined,
       onUpdatePanelVideoModel: () => undefined,
       onToggleLink: () => undefined,
@@ -162,6 +164,7 @@ describe('VideoPanelCardBody', () => {
     expect(markup).toContain('作为镜头 2 的尾帧')
     expect(markup).toContain('作为镜头 4 的首帧')
     expect(markup).toContain('视频提示词')
+    expect(markup).toContain('优化提示词')
     expect(markup).toContain('生成首尾帧视频')
   })
 })

@@ -4,12 +4,14 @@ import { getAssistantSkill, isAssistantId } from '@/lib/assistant-platform'
 describe('assistant-platform registry', () => {
   it('recognizes supported assistant ids', () => {
     expect(isAssistantId('api-config-template')).toBe(true)
+    expect(isAssistantId('sd2-pe')).toBe(true)
     expect(isAssistantId('tutorial')).toBe(true)
     expect(isAssistantId('unknown')).toBe(false)
   })
 
   it('returns registered skills', () => {
     expect(getAssistantSkill('api-config-template').id).toBe('api-config-template')
+    expect(getAssistantSkill('sd2-pe').id).toBe('sd2-pe')
     expect(getAssistantSkill('tutorial').id).toBe('tutorial')
   })
 })

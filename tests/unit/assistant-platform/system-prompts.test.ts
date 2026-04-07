@@ -18,4 +18,14 @@ describe('assistant-platform system prompts', () => {
     expect(prompt).toContain('你是产品教程助手')
     expect(prompt).toContain('禁止编造不存在的页面')
   })
+
+  it('loads sd2-pe prompt and injects panel json context', () => {
+    const prompt = renderAssistantSystemPrompt('sd2-pe', {
+      panelContextJson: '{"panelId":"panel-1"}',
+    })
+
+    expect(prompt).toContain('你是 Seedance 2.0 提示词工程专家')
+    expect(prompt).toContain('{"panelId":"panel-1"}')
+    expect(prompt).not.toContain('{{panelContextJson}}')
+  })
 })

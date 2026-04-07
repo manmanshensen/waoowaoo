@@ -32,7 +32,7 @@ describe('api specific - user assistant chat', () => {
     resetAuthMockState()
   })
 
-  it('accepts api-config-template assistant request and forwards payload', async () => {
+  it('accepts assistant request and forwards payload', async () => {
     installAuthMocks()
     mockAuthenticated('user-1')
     const route = await import('@/app/api/user/assistant/chat/route')
@@ -41,14 +41,15 @@ describe('api specific - user assistant chat', () => {
       path: '/api/user/assistant/chat',
       method: 'POST',
       body: {
-        assistantId: 'api-config-template',
+        assistantId: 'sd2-pe',
         context: {
-          providerId: 'openai-compatible:oa-1',
+          locale: 'zh',
+          panelContextJson: '{"panelId":"panel-1"}',
         },
         messages: [{
           id: 'm1',
           role: 'user',
-          parts: [{ type: 'text', text: '请配置文生视频模板' }],
+          parts: [{ type: 'text', text: '请优化当前视频提示词' }],
         }],
       },
     })
@@ -57,14 +58,15 @@ describe('api specific - user assistant chat', () => {
     expect(res.status).toBe(200)
     expect(createAssistantChatResponseMock).toHaveBeenCalledWith({
       userId: 'user-1',
-      assistantId: 'api-config-template',
+      assistantId: 'sd2-pe',
       context: {
-        providerId: 'openai-compatible:oa-1',
+        locale: 'zh',
+        panelContextJson: '{"panelId":"panel-1"}',
       },
       messages: [{
         id: 'm1',
         role: 'user',
-        parts: [{ type: 'text', text: '请配置文生视频模板' }],
+        parts: [{ type: 'text', text: '请优化当前视频提示词' }],
       }],
     })
   })

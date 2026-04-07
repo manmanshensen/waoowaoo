@@ -1,14 +1,17 @@
 'use client'
 
 import { logError as _ulogError } from '@/lib/logging/core'
-import { useCallback, useEffect, useMemo, useState } from 'react'
-import { useTranslations } from 'next-intl'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useLocale, useTranslations } from 'next-intl'
 import {
+  type VideoPromptOptimizerPayload,
   VideoToolbar,
   type VideoGenerationOptionValue,
   type VideoGenerationOptions,
   type VideoModelOption,
 } from '@/app/[locale]/workspace/[projectId]/modes/novel-promotion/components/video'
+import { AssistantChatModal } from '@/components/assistant/AssistantChatModal'
+import { useAssistantChat } from '@/components/assistant/useAssistantChat'
 import { AppIcon } from '@/components/ui/icons'
 import {
   useDownloadRemoteBlob,
@@ -60,6 +63,13 @@ interface BatchCapabilityField {
   disabledOptions?: VideoGenerationOptionValue[]
 }
 
+interface PromptOptimizerSession {
+  requestKey: number
+  shotNumber: number
+  panelContextJson: string
+  initialMessage: string
+}
+
 function toFieldLabel(field: string): string {
   return field.replace(/([A-Z])/g, ' $1').replace(/^./, (char) => char.toUpperCase())
 }
@@ -82,6 +92,7 @@ export function useVideoStageRuntime({
   onEnterEditor,
 }: VideoStageShellProps) {
   const t = useTranslations('video')
+  const locale = useLocale()
 
   const {
     panelVideoPreference,
@@ -191,6 +202,9 @@ export function useVideoStageRuntime({
   const [submittingVideoBaselines, setSubmittingVideoBaselines] = useState<Map<string, VideoSubmissionBaseline>>(new Map())
   const [batchSelectedModel, setBatchSelectedModel] = useState('')
   const [batchGenerationOptions, setBatchGenerationOptions] = useState<VideoGenerationOptions>({})
+  const [promptOptimizerSession, setPromptOptimizerSession] = useState<PromptOptimizerSession | null>(null)
+  const promptOptimizerRequestCounterRef = useRef(0)
+  const lastAutoPromptRequestRef = useRef<number | null>(null)
 
   useEffect(() => {
     if (normalVideoModelOptions.length === 0) {
@@ -277,6 +291,15 @@ export function useVideoStageRuntime({
     [batchEffectiveCapabilityFields],
   )
 
+  const promptOptimizerChat = useAssistantChat({
+    assistantId: 'sd2-pe',
+    context: {
+      locale,
+      panelContextJson: promptOptimizerSession?.panelContextJson,
+    },
+    enabled: promptOptimizerSession !== null,
+  })
+
   const setBatchCapabilityValue = useCallback((field: string, rawValue: string) => {
     const capabilityDefinition = batchDefinitionFieldMap.get(field)
     if (!capabilityDefinition || capabilityDefinition.options.length === 0) return
@@ -300,6 +323,52 @@ export function useVideoStageRuntime({
       }),
     }))
   }, [batchCapabilityDefinitions, batchDefinitionFieldMap, batchPricingTiers])
+
+  const handleOpenPromptOptimizer = useCallback((payload: VideoPromptOptimizerPayload) => {
+    promptOptimizerRequestCounterRef.current += 1
+    const shotNumber = payload.panel.textPanel?.panel_number || payload.panelIndex + 1
+    const panelContextJson = JSON.stringify({
+      projectId,
+      episodeId,
+      panelKey: payload.panelKey,
+      promptField: payload.promptField,
+      currentPrompt: payload.currentPrompt,
+      defaultFlPrompt: payload.defaultFlPrompt || '',
+      layout: {
+        isLinked: payload.isLinked,
+        isLastFrame: payload.isLastFrame,
+        hasNext: payload.hasNext,
+        videoRatio: payload.videoRatio || videoRatio,
+      },
+      panel: payload.panel,
+      prevPanel: payload.prevPanel,
+      nextPanel: payload.nextPanel,
+    }, null, 2)
+
+    setPromptOptimizerSession({
+      requestKey: promptOptimizerRequestCounterRef.current,
+      shotNumber,
+      panelContextJson,
+      initialMessage: t('promptOptimizer.defaultRequest'),
+    })
+  }, [episodeId, projectId, t, videoRatio])
+
+  const handleClosePromptOptimizer = useCallback(() => {
+    lastAutoPromptRequestRef.current = null
+    setPromptOptimizerSession(null)
+    promptOptimizerChat.clear()
+  }, [promptOptimizerChat])
+
+  useEffect(() => {
+    if (!promptOptimizerSession) {
+      lastAutoPromptRequestRef.current = null
+      return
+    }
+    if (lastAutoPromptRequestRef.current === promptOptimizerSession.requestKey) return
+    lastAutoPromptRequestRef.current = promptOptimizerSession.requestKey
+    promptOptimizerChat.clear()
+    void promptOptimizerChat.send(promptOptimizerSession.initialMessage)
+  }, [promptOptimizerChat, promptOptimizerSession])
 
   const handleLipSync = useCallback(async (
     storyboardId: string,
@@ -579,6 +648,7 @@ export function useVideoStageRuntime({
         getLocalPrompt={getLocalPrompt}
         updateLocalPrompt={updateLocalPrompt}
         savePrompt={savePrompt}
+        onOpenPromptOptimizer={handleOpenPromptOptimizer}
       />
 
       {isBatchConfigOpen && (
@@ -641,6 +711,29 @@ export function useVideoStageRuntime({
           </div>
         </div>
       )}
+
+      <AssistantChatModal
+        open={promptOptimizerSession !== null}
+        title={t('promptOptimizer.title', { number: promptOptimizerSession?.shotNumber || 0 })}
+        subtitle={t('promptOptimizer.subtitle')}
+        closeLabel={t('promptOptimizer.close')}
+        userLabel={t('promptOptimizer.userLabel')}
+        assistantLabel="SD2 PE"
+        reasoningTitle={t('promptOptimizer.reasoningTitle')}
+        reasoningExpandLabel={t('promptOptimizer.reasoningExpand')}
+        reasoningCollapseLabel={t('promptOptimizer.reasoningCollapse')}
+        emptyAssistantMessage={t('promptOptimizer.emptyAssistantMessage')}
+        inputPlaceholder={t('promptOptimizer.inputPlaceholder')}
+        sendLabel={t('promptOptimizer.send')}
+        pendingLabel={t('promptOptimizer.pending')}
+        messages={promptOptimizerChat.messages}
+        input={promptOptimizerChat.input}
+        pending={promptOptimizerChat.pending}
+        errorMessage={promptOptimizerChat.error?.message}
+        onClose={handleClosePromptOptimizer}
+        onInputChange={promptOptimizerChat.setInput}
+        onSend={() => { void promptOptimizerChat.send() }}
+      />
 
       {previewImage && <ImagePreviewModal imageUrl={previewImage} onClose={closePreviewImage} />}
     </div>

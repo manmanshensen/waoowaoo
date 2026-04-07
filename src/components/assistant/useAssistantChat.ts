@@ -5,7 +5,7 @@ import { DefaultChatTransport, type ChatStatus, type UIMessage } from 'ai'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { OpenAICompatMediaTemplate } from '@/lib/openai-compat-media-template'
 
-export type AssistantChatId = 'api-config-template' | 'tutorial'
+export type AssistantChatId = 'api-config-template' | 'tutorial' | 'sd2-pe'
 
 export interface AssistantDraftModel {
   modelId: string
@@ -25,6 +25,7 @@ export interface UseAssistantChatParams {
   context: {
     providerId?: string
     locale?: string
+    panelContextJson?: string
   }
   enabled: boolean
   onSaved?: (event: AssistantSavedEvent) => void
@@ -135,7 +136,8 @@ export function useAssistantChat(params: UseAssistantChatParams): UseAssistantCh
   const contextPayload = useMemo(() => ({
     providerId: params.context.providerId,
     locale: params.context.locale,
-  }), [params.context.locale, params.context.providerId])
+    panelContextJson: params.context.panelContextJson,
+  }), [params.context.locale, params.context.panelContextJson, params.context.providerId])
 
   const transport = useMemo(() => new DefaultChatTransport({
     api: '/api/user/assistant/chat',

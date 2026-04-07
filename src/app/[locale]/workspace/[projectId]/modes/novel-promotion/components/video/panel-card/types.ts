@@ -38,6 +38,7 @@ export interface VideoPanelCardShellProps {
   isSavingPrompt: boolean
   onUpdateLocalPrompt: (value: string) => void
   onSavePrompt: (value: string) => Promise<void>
+  onOptimizePrompt?: () => void
   onGenerateVideo: (
     storyboardId: string,
     panelIndex: number,

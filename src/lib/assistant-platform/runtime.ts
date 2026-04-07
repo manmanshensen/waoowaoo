@@ -18,15 +18,18 @@ function normalizeAssistantContext(raw: unknown): AssistantContext {
   const record = raw as Record<string, unknown>
   const providerId = typeof record.providerId === 'string' ? record.providerId.trim() : ''
   const locale = typeof record.locale === 'string' ? record.locale.trim() : ''
+  const panelContextJson = typeof record.panelContextJson === 'string' ? record.panelContextJson.trim() : ''
   return {
     ...(providerId ? { providerId } : {}),
     ...(locale ? { locale } : {}),
+    ...(panelContextJson ? { panelContextJson } : {}),
   }
 }
 
 async function toModelMessages(messages: UIMessage[]): Promise<Awaited<ReturnType<typeof convertToModelMessages>>> {
   const withoutIds = messages.map((message) => {
     const { id: _id, ...rest } = message
+    void _id
     return rest
   })
   return await convertToModelMessages(withoutIds)

@@ -100,6 +100,21 @@ export interface VideoPanel {
   lipSyncErrorCode?: string
 }
 
+export interface VideoPromptOptimizerPayload {
+  panel: VideoPanel
+  panelIndex: number
+  panelKey: string
+  currentPrompt: string
+  promptField: 'videoPrompt' | 'firstLastFramePrompt'
+  isLinked: boolean
+  isLastFrame: boolean
+  hasNext: boolean
+  prevPanel: VideoPanel | null
+  nextPanel: VideoPanel | null
+  defaultFlPrompt?: string
+  videoRatio?: string
+}
+
 // 匹配的配音信息
 export interface MatchedVoiceLine {
   id: string

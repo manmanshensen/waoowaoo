@@ -1,7 +1,7 @@
 import { getAspectRatioConfig } from '@/lib/constants'
 import type { MutableRefObject } from 'react'
 import type { CapabilitySelections, CapabilityValue } from '@/lib/model-config-contract'
-import { VideoPanelCard, type VideoPanel, type VideoModelOption, type MatchedVoiceLine, type FirstLastFrameParams, type VideoGenerationOptions } from '../video'
+import { VideoPanelCard, type VideoPanel, type VideoModelOption, type MatchedVoiceLine, type FirstLastFrameParams, type VideoGenerationOptions, type VideoPromptOptimizerPayload } from '../video'
 import type { PromptField } from '@/lib/novel-promotion/stages/video-stage-runtime/useVideoPromptState'
 
 interface VideoRenderPanelProps {
@@ -70,6 +70,7 @@ interface VideoRenderPanelProps {
     value: string,
     field?: PromptField,
   ) => Promise<void>
+  onOpenPromptOptimizer: (payload: VideoPromptOptimizerPayload) => void
 }
 
 export default function VideoRenderPanel({
@@ -111,6 +112,7 @@ export default function VideoRenderPanel({
   getLocalPrompt,
   updateLocalPrompt,
   savePrompt,
+  onOpenPromptOptimizer,
 }: VideoRenderPanelProps) {
   return (
     <>
@@ -182,6 +184,20 @@ export default function VideoRenderPanel({
                   if (isLinked) onFlCustomPromptChange(panelKey, value)
                 }}
                 onSavePrompt={(value) => savePrompt(panel.storyboardId, panel.panelIndex, panelKey, value, promptField)}
+                onOptimizePrompt={() => onOpenPromptOptimizer({
+                  panel,
+                  panelIndex: idx,
+                  panelKey,
+                  currentPrompt: localPrompt,
+                  promptField,
+                  isLinked,
+                  isLastFrame,
+                  hasNext,
+                  prevPanel,
+                  nextPanel,
+                  defaultFlPrompt,
+                  videoRatio,
+                })}
                 onGenerateVideo={onGenerateVideo}
                 onUpdatePanelVideoModel={onUpdatePanelVideoModel}
                 onToggleLink={onToggleLink}
