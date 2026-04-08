@@ -52,6 +52,31 @@ export default function VideoPanelCardBody({ runtime }: VideoPanelCardBodyProps)
   const showsFirstLastFrameActions = layout.isLinked && !!layout.nextPanel
   const [copySucceeded, setCopySucceeded] = useState(false)
   const promptToCopy = promptEditor.localPrompt.trim()
+  const promptOptimizerStatus = promptEditor.promptOptimizerStatus || 'idle'
+
+  const promptOptimizerLabel = (() => {
+    if (promptOptimizerStatus === 'running') return t('promptOptimizer.pending')
+    if (promptOptimizerStatus === 'done') return t('panelCard.optimizedPrompt')
+    if (promptOptimizerStatus === 'error') return t('panelCard.optimizePromptError')
+    return t('panelCard.optimizePrompt')
+  })()
+
+  const promptOptimizerIcon = (() => {
+    if (promptOptimizerStatus === 'running') return <AppIcon name="loader" className="h-3.5 w-3.5 animate-spin" />
+    if (promptOptimizerStatus === 'done') return <AppIcon name="check" className="h-3.5 w-3.5" />
+    if (promptOptimizerStatus === 'error') return <AppIcon name="alert" className="h-3.5 w-3.5" />
+    return <AppIcon name="sparklesAlt" className="h-3.5 w-3.5" />
+  })()
+
+  const promptOptimizerButtonClassName = (() => {
+    if (promptOptimizerStatus === 'done') {
+      return 'inline-flex items-center gap-1 text-[var(--glass-tone-success-fg)] hover:text-[var(--glass-tone-success-fg)] transition-colors p-0.5'
+    }
+    if (promptOptimizerStatus === 'error') {
+      return 'inline-flex items-center gap-1 text-[var(--glass-tone-danger-fg)] hover:text-[var(--glass-tone-danger-fg)] transition-colors p-0.5'
+    }
+    return 'inline-flex items-center gap-1 text-[var(--glass-text-tertiary)] hover:text-[var(--glass-tone-info-fg)] transition-colors p-0.5'
+  })()
 
   useEffect(() => {
     if (!copySucceeded) return
@@ -130,12 +155,12 @@ export default function VideoPanelCardBody({ runtime }: VideoPanelCardBodyProps)
                     {actions.onOptimizePrompt && (
                       <button
                         onClick={actions.onOptimizePrompt}
-                        className="inline-flex items-center gap-1 text-[var(--glass-text-tertiary)] hover:text-[var(--glass-tone-info-fg)] transition-colors p-0.5"
-                        title={t('panelCard.optimizePrompt')}
+                        className={promptOptimizerButtonClassName}
+                        title={promptOptimizerLabel}
                         type="button"
                       >
-                        <AppIcon name="sparklesAlt" className="w-3.5 h-3.5" />
-                        <span className="text-[10px]">{t('panelCard.optimizePrompt')}</span>
+                        {promptOptimizerIcon}
+                        <span className="text-[10px]">{promptOptimizerLabel}</span>
                       </button>
                     )}
                     <button

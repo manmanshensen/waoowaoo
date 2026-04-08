@@ -4,6 +4,7 @@ import type { OpenAICompatMediaTemplate } from '@/lib/openai-compat-media-templa
 export type AssistantId = 'api-config-template' | 'tutorial' | 'sd2-pe'
 
 export interface AssistantContext {
+  projectId?: string
   providerId?: string
   locale?: string
   panelContextJson?: string

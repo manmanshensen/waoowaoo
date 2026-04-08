@@ -99,6 +99,7 @@ function createState(tutorial: ProviderTutorial): UseProviderCardStateResult {
       error: undefined,
       setInput: () => undefined,
       send: async () => undefined,
+      stop: () => undefined,
       clear: () => undefined,
     },
     openAssistant: () => undefined,

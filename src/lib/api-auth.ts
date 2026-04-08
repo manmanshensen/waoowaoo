@@ -25,6 +25,65 @@ export interface AuthSession {
     }
 }
 
+function normalizeSessionUserName(session: AuthSession): string {
+    const preferredName = session.user.name?.trim()
+    if (preferredName) return preferredName
+
+    const emailName = session.user.email?.split('@')[0]?.trim()
+    if (emailName) return emailName
+
+    return `user-${session.user.id.slice(0, 8)}`
+}
+
+async function ensureSessionUserRecord(session: AuthSession): Promise<void> {
+    const incomingHeaders = await readHeaders()
+    if (incomingHeaders.get('x-internal-user-id')) return
+
+    const existingUser = await withPrismaRetry(() =>
+        prisma.user.findUnique({
+            where: { id: session.user.id },
+            select: { id: true },
+        })
+    )
+    if (existingUser) return
+
+    const baseName = normalizeSessionUserName(session)
+    const conflictingUser = await withPrismaRetry(() =>
+        prisma.user.findUnique({
+            where: { name: baseName },
+            select: { id: true },
+        })
+    )
+    const finalName = conflictingUser && conflictingUser.id !== session.user.id
+        ? `${baseName}-${session.user.id.slice(0, 8)}`
+        : baseName
+
+    await withPrismaRetry(() =>
+        prisma.$transaction(async (tx) => {
+            await tx.user.upsert({
+                where: { id: session.user.id },
+                update: {},
+                create: {
+                    id: session.user.id,
+                    name: finalName,
+                    email: session.user.email ?? null,
+                },
+            })
+
+            await tx.userBalance.upsert({
+                where: { userId: session.user.id },
+                update: {},
+                create: {
+                    userId: session.user.id,
+                    balance: 0,
+                    frozenAmount: 0,
+                    totalSpent: 0,
+                },
+            })
+        })
+    )
+}
+
 function bindAuthLogContext(session: AuthSession, projectId?: string) {
     const context = getLogContext()
     if (!context.requestId) return
@@ -316,6 +375,7 @@ export async function requireUserAuth(): Promise<{ session: AuthSession } | Next
     if (!session?.user?.id) {
         return unauthorized()
     }
+    await ensureSessionUserRecord(session)
     bindAuthLogContext(session)
     return { session }
 }

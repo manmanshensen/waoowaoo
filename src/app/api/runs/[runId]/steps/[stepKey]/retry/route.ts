@@ -73,6 +73,7 @@ export const POST = apiHandler(async (
       throw new ApiError('INVALID_PARAMS', {
         code: 'RUN_STEP_RETRY_ONLY_FAILED',
         stepKey,
+        message: 'Only failed steps can be retried',
       })
     }
     throw error

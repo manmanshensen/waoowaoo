@@ -36,6 +36,8 @@
     "editPrompt": "Edit Prompt",
     "clickToEditPrompt": "Click to edit prompt...",
     "optimizePrompt": "Optimize Prompt",
+    "optimizedPrompt": "Optimization Complete",
+    "optimizePromptError": "Optimize Failed",
     "copyVideoPrompt": "Copy Video Prompt",
     "copiedVideoPrompt": "Video Prompt Copied",
     "uploadVideo": "Upload Video",
@@ -85,6 +87,7 @@
     "inputPlaceholder": "Add any extra constraints you want to emphasize...",
     "send": "Send",
     "pending": "Optimizing...",
+    "discard": "Discard",
     "defaultRequest": "Based on the full panel JSON, optimize the current video prompt and return only the final copyable prompt text."
   },
   "toolbar": {

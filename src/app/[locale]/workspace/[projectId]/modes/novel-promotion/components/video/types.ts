@@ -105,6 +105,8 @@ export interface VideoPromptOptimizerPayload {
   panelIndex: number
   panelKey: string
   currentPrompt: string
+  originalText?: string
+  dialogueLines?: string[]
   promptField: 'videoPrompt' | 'firstLastFramePrompt'
   isLinked: boolean
   isLastFrame: boolean

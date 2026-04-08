@@ -70,6 +70,7 @@ interface VideoRenderPanelProps {
     value: string,
     field?: PromptField,
   ) => Promise<void>
+  promptOptimizerStatuses: Map<string, 'idle' | 'running' | 'done' | 'error'>
   onOpenPromptOptimizer: (payload: VideoPromptOptimizerPayload) => void
 }
 
@@ -112,6 +113,7 @@ export default function VideoRenderPanel({
   getLocalPrompt,
   updateLocalPrompt,
   savePrompt,
+  promptOptimizerStatuses,
   onOpenPromptOptimizer,
 }: VideoRenderPanelProps) {
   return (
@@ -134,6 +136,7 @@ export default function VideoRenderPanel({
             : panel.textPanel?.video_prompt
           const localPrompt = getLocalPrompt(panelKey, externalPrompt, promptField)
           const isSavingPrompt = savingPrompts.has(`${promptField}:${panelKey}`)
+          const promptOptimizerTaskKey = `${promptField}:${panelKey}`
 
           return (
             <div
@@ -179,6 +182,7 @@ export default function VideoRenderPanel({
                 defaultFlPrompt={defaultFlPrompt}
                 localPrompt={localPrompt}
                 isSavingPrompt={isSavingPrompt}
+                promptOptimizerStatus={promptOptimizerStatuses.get(promptOptimizerTaskKey) || 'idle'}
                 onUpdateLocalPrompt={(value) => {
                   updateLocalPrompt(panelKey, value, promptField)
                   if (isLinked) onFlCustomPromptChange(panelKey, value)
@@ -189,6 +193,14 @@ export default function VideoRenderPanel({
                   panelIndex: idx,
                   panelKey,
                   currentPrompt: localPrompt,
+                  originalText: panel.textPanel?.text_segment || undefined,
+                  dialogueLines: (panelVoiceLines.get(panelKey) || []).map((line) => {
+                    const speaker = line.speaker?.trim()
+                    const content = line.content?.trim()
+                    if (!speaker) return content
+                    if (!content) return speaker
+                    return `${speaker}: ${content}`
+                  }).filter((line): line is string => Boolean(line)),
                   promptField,
                   isLinked,
                   isLastFrame,

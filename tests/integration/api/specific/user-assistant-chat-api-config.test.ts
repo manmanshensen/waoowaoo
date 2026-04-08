@@ -71,6 +71,47 @@ describe('api specific - user assistant chat', () => {
     })
   })
 
+  it('forwards projectId from request context for project-scoped assistant model resolution', async () => {
+    installAuthMocks()
+    mockAuthenticated('user-1')
+    const route = await import('@/app/api/user/assistant/chat/route')
+
+    const req = buildMockRequest({
+      path: '/api/user/assistant/chat',
+      method: 'POST',
+      body: {
+        assistantId: 'sd2-pe',
+        context: {
+          projectId: 'project-123',
+          locale: 'zh',
+          panelContextJson: '{"projectId":"project-123","panelId":"panel-1"}',
+        },
+        messages: [{
+          id: 'm1',
+          role: 'user',
+          parts: [{ type: 'text', text: '请优化当前视频提示词' }],
+        }],
+      },
+    })
+
+    const res = await route.POST(req, routeContext)
+    expect(res.status).toBe(200)
+    expect(createAssistantChatResponseMock).toHaveBeenCalledWith({
+      userId: 'user-1',
+      assistantId: 'sd2-pe',
+      context: {
+        projectId: 'project-123',
+        locale: 'zh',
+        panelContextJson: '{"projectId":"project-123","panelId":"panel-1"}',
+      },
+      messages: [{
+        id: 'm1',
+        role: 'user',
+        parts: [{ type: 'text', text: '请优化当前视频提示词' }],
+      }],
+    })
+  })
+
   it('rejects invalid assistantId', async () => {
     installAuthMocks()
     mockAuthenticated('user-1')

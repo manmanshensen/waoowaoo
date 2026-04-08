@@ -36,6 +36,7 @@ export interface VideoPanelCardShellProps {
   defaultFlPrompt: string
   localPrompt: string
   isSavingPrompt: boolean
+  promptOptimizerStatus?: 'idle' | 'running' | 'done' | 'error'
   onUpdateLocalPrompt: (value: string) => void
   onSavePrompt: (value: string) => Promise<void>
   onOptimizePrompt?: () => void

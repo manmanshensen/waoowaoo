@@ -3,6 +3,7 @@
 import { logError as _ulogError } from '@/lib/logging/core'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useLocale, useTranslations } from 'next-intl'
+import { Chat } from '@ai-sdk/react'
 import {
   type VideoPromptOptimizerPayload,
   VideoToolbar,
@@ -10,8 +11,8 @@ import {
   type VideoGenerationOptions,
   type VideoModelOption,
 } from '@/app/[locale]/workspace/[projectId]/modes/novel-promotion/components/video'
-import { AssistantChatModal } from '@/components/assistant/AssistantChatModal'
-import { useAssistantChat } from '@/components/assistant/useAssistantChat'
+import { AssistantChatModal, extractMessageContent } from '@/components/assistant/AssistantChatModal'
+import { DefaultChatTransport, type ChatStatus, type UIMessage } from 'ai'
 import { AppIcon } from '@/components/ui/icons'
 import {
   useDownloadRemoteBlob,
@@ -64,10 +65,76 @@ interface BatchCapabilityField {
 }
 
 interface PromptOptimizerSession {
+  taskKey: string
   requestKey: number
+  storyboardId: string
+  panelIndex: number
+  panelKey: string
+  promptField: 'videoPrompt' | 'firstLastFramePrompt'
   shotNumber: number
   panelContextJson: string
   initialMessage: string
+  sourceFingerprint: string
+  messages: UIMessage[]
+  input: string
+  status: ChatStatus
+  pending: boolean
+  error: Error | undefined
+}
+
+type PromptOptimizerUiStatus = 'idle' | 'running' | 'done' | 'error'
+
+function buildPromptOptimizerTaskKey(panelKey: string, promptField: PromptOptimizerSession['promptField']): string {
+  return `${promptField}:${panelKey}`
+}
+
+function buildPromptOptimizerSourceFingerprint(input: {
+  currentPrompt: string
+  defaultFlPrompt?: string
+  originalText?: string
+  dialogueLines?: string[]
+  panelContextJson: string
+}): string {
+  return JSON.stringify({
+    currentPrompt: input.currentPrompt.trim(),
+    defaultFlPrompt: input.defaultFlPrompt?.trim() || '',
+    originalText: input.originalText?.trim() || '',
+    dialogueLines: (input.dialogueLines || []).map((line) => line.trim()).filter(Boolean),
+    panelContextJson: input.panelContextJson,
+  })
+}
+
+function getPromptOptimizerTaskUiStatus(task: Pick<PromptOptimizerSession, 'pending' | 'error' | 'messages'>): PromptOptimizerUiStatus {
+  if (task.pending) return 'running'
+  if (task.error) return 'error'
+  for (let index = task.messages.length - 1; index >= 0; index -= 1) {
+    const message = task.messages[index]
+    if (message?.role !== 'assistant') continue
+    if (extractMessageContent(message).lines.join('\n\n').trim()) return 'done'
+  }
+  return 'idle'
+}
+
+function buildPromptOptimizerInitialMessage(input: {
+  currentPrompt?: string
+  defaultFlPrompt?: string
+  originalText?: string
+  dialogueLines?: string[]
+}): string {
+  const currentPrompt = input.currentPrompt?.trim() || ''
+  const defaultFlPrompt = input.defaultFlPrompt?.trim() || ''
+  const originalText = input.originalText?.trim() || ''
+  const dialogueLines = (input.dialogueLines || []).map((line) => line.trim()).filter(Boolean)
+
+  const sections = [
+    '请基于当前 panel 的完整 JSON 优化当前视频提示词，直接输出可复制的最终提示词正文。',
+    currentPrompt ? `当前原始提示词：\n${currentPrompt}` : '',
+    originalText ? `当前 panel 原文：\n${originalText}` : '',
+    dialogueLines.length > 0 ? `当前 panel 台词：\n${dialogueLines.join('\n')}` : '',
+    defaultFlPrompt ? `可参考的默认首尾帧提示词：\n${defaultFlPrompt}` : '',
+  ].filter(Boolean)
+
+  return sections.join('\n\n')
 }
 
 function toFieldLabel(field: string): string {
@@ -202,9 +269,11 @@ export function useVideoStageRuntime({
   const [submittingVideoBaselines, setSubmittingVideoBaselines] = useState<Map<string, VideoSubmissionBaseline>>(new Map())
   const [batchSelectedModel, setBatchSelectedModel] = useState('')
   const [batchGenerationOptions, setBatchGenerationOptions] = useState<VideoGenerationOptions>({})
-  const [promptOptimizerSession, setPromptOptimizerSession] = useState<PromptOptimizerSession | null>(null)
+  const [promptOptimizerTasks, setPromptOptimizerTasks] = useState<Map<string, PromptOptimizerSession>>(new Map())
+  const [activePromptOptimizerTaskKey, setActivePromptOptimizerTaskKey] = useState<string | null>(null)
   const promptOptimizerRequestCounterRef = useRef(0)
-  const lastAutoPromptRequestRef = useRef<number | null>(null)
+  const promptOptimizerChatsRef = useRef(new Map<string, Chat<UIMessage>>())
+  const promptOptimizerUnsubscribersRef = useRef(new Map<string, Array<() => void>>())
 
   useEffect(() => {
     if (normalVideoModelOptions.length === 0) {
@@ -291,14 +360,78 @@ export function useVideoStageRuntime({
     [batchEffectiveCapabilityFields],
   )
 
-  const promptOptimizerChat = useAssistantChat({
-    assistantId: 'sd2-pe',
-    context: {
-      locale,
-      panelContextJson: promptOptimizerSession?.panelContextJson,
-    },
-    enabled: promptOptimizerSession !== null,
-  })
+  const syncPromptOptimizerTask = useCallback((taskKey: string) => {
+    const chat = promptOptimizerChatsRef.current.get(taskKey)
+    if (!chat) return
+    setPromptOptimizerTasks((previous) => {
+      const task = previous.get(taskKey)
+      if (!task) return previous
+      const pending = chat.status === 'submitted' || chat.status === 'streaming'
+      const nextTask: PromptOptimizerSession = {
+        ...task,
+        messages: [...chat.messages],
+        status: chat.status,
+        pending,
+        error: chat.error,
+      }
+      const next = new Map(previous)
+      next.set(taskKey, nextTask)
+      return next
+    })
+  }, [])
+
+  const removePromptOptimizerTask = useCallback((taskKey: string) => {
+    const chat = promptOptimizerChatsRef.current.get(taskKey)
+    if (chat) chat.stop()
+    const unsubscribers = promptOptimizerUnsubscribersRef.current.get(taskKey) || []
+    for (const unsubscribe of unsubscribers) unsubscribe()
+    promptOptimizerUnsubscribersRef.current.delete(taskKey)
+    promptOptimizerChatsRef.current.delete(taskKey)
+    setPromptOptimizerTasks((previous) => {
+      if (!previous.has(taskKey)) return previous
+      const next = new Map(previous)
+      next.delete(taskKey)
+      return next
+    })
+    setActivePromptOptimizerTaskKey((previous) => (previous === taskKey ? null : previous))
+  }, [])
+
+  const createPromptOptimizerTask = useCallback((task: Omit<PromptOptimizerSession, 'messages' | 'input' | 'status' | 'pending' | 'error'>) => {
+    const transport = new DefaultChatTransport({
+      api: '/api/user/assistant/chat',
+      body: {
+        assistantId: 'sd2-pe',
+        context: {
+          locale,
+          panelContextJson: task.panelContextJson,
+        },
+      },
+    })
+    const chat = new Chat<UIMessage>({ transport })
+    promptOptimizerChatsRef.current.set(task.taskKey, chat)
+    const unsubscribers = [
+      chat['~registerMessagesCallback'](() => { syncPromptOptimizerTask(task.taskKey) }),
+      chat['~registerStatusCallback'](() => { syncPromptOptimizerTask(task.taskKey) }),
+      chat['~registerErrorCallback'](() => { syncPromptOptimizerTask(task.taskKey) }),
+    ]
+    promptOptimizerUnsubscribersRef.current.set(task.taskKey, unsubscribers)
+    setPromptOptimizerTasks((previous) => {
+      const next = new Map(previous)
+      next.set(task.taskKey, {
+        ...task,
+        messages: [],
+        input: '',
+        status: 'ready',
+        pending: false,
+        error: undefined,
+      })
+      return next
+    })
+    setActivePromptOptimizerTaskKey(task.taskKey)
+    void chat.sendMessage({ text: task.initialMessage }).catch(() => {
+      syncPromptOptimizerTask(task.taskKey)
+    })
+  }, [locale, syncPromptOptimizerTask])
 
   const setBatchCapabilityValue = useCallback((field: string, rawValue: string) => {
     const capabilityDefinition = batchDefinitionFieldMap.get(field)
@@ -325,7 +458,6 @@ export function useVideoStageRuntime({
   }, [batchCapabilityDefinitions, batchDefinitionFieldMap, batchPricingTiers])
 
   const handleOpenPromptOptimizer = useCallback((payload: VideoPromptOptimizerPayload) => {
-    promptOptimizerRequestCounterRef.current += 1
     const shotNumber = payload.panel.textPanel?.panel_number || payload.panelIndex + 1
     const panelContextJson = JSON.stringify({
       projectId,
@@ -333,6 +465,8 @@ export function useVideoStageRuntime({
       panelKey: payload.panelKey,
       promptField: payload.promptField,
       currentPrompt: payload.currentPrompt,
+      originalText: payload.originalText || '',
+      dialogueLines: payload.dialogueLines || [],
       defaultFlPrompt: payload.defaultFlPrompt || '',
       layout: {
         isLinked: payload.isLinked,
@@ -344,31 +478,163 @@ export function useVideoStageRuntime({
       prevPanel: payload.prevPanel,
       nextPanel: payload.nextPanel,
     }, null, 2)
-
-    setPromptOptimizerSession({
-      requestKey: promptOptimizerRequestCounterRef.current,
-      shotNumber,
+    const taskKey = buildPromptOptimizerTaskKey(payload.panelKey, payload.promptField)
+    const sourceFingerprint = buildPromptOptimizerSourceFingerprint({
+      currentPrompt: payload.currentPrompt,
+      defaultFlPrompt: payload.defaultFlPrompt,
+      originalText: payload.originalText,
+      dialogueLines: payload.dialogueLines,
       panelContextJson,
-      initialMessage: t('promptOptimizer.defaultRequest'),
     })
-  }, [episodeId, projectId, t, videoRatio])
-
-  const handleClosePromptOptimizer = useCallback(() => {
-    lastAutoPromptRequestRef.current = null
-    setPromptOptimizerSession(null)
-    promptOptimizerChat.clear()
-  }, [promptOptimizerChat])
-
-  useEffect(() => {
-    if (!promptOptimizerSession) {
-      lastAutoPromptRequestRef.current = null
+    const existingTask = promptOptimizerTasks.get(taskKey)
+    if (existingTask && existingTask.sourceFingerprint === sourceFingerprint) {
+      setActivePromptOptimizerTaskKey(taskKey)
       return
     }
-    if (lastAutoPromptRequestRef.current === promptOptimizerSession.requestKey) return
-    lastAutoPromptRequestRef.current = promptOptimizerSession.requestKey
-    promptOptimizerChat.clear()
-    void promptOptimizerChat.send(promptOptimizerSession.initialMessage)
-  }, [promptOptimizerChat, promptOptimizerSession])
+    if (existingTask) {
+      removePromptOptimizerTask(taskKey)
+    }
+
+    promptOptimizerRequestCounterRef.current += 1
+    createPromptOptimizerTask({
+      taskKey,
+      requestKey: promptOptimizerRequestCounterRef.current,
+      storyboardId: payload.panel.storyboardId,
+      panelIndex: payload.panel.panelIndex,
+      panelKey: payload.panelKey,
+      promptField: payload.promptField,
+      shotNumber,
+      panelContextJson,
+      initialMessage: buildPromptOptimizerInitialMessage({
+        currentPrompt: payload.currentPrompt,
+        defaultFlPrompt: payload.defaultFlPrompt,
+        originalText: payload.originalText,
+        dialogueLines: payload.dialogueLines,
+      }),
+      sourceFingerprint,
+    })
+  }, [createPromptOptimizerTask, episodeId, projectId, promptOptimizerTasks, removePromptOptimizerTask, videoRatio])
+
+  const handleClosePromptOptimizer = useCallback(() => {
+    setActivePromptOptimizerTaskKey(null)
+  }, [])
+
+  const activePromptOptimizerTask = useMemo(
+    () => (activePromptOptimizerTaskKey ? (promptOptimizerTasks.get(activePromptOptimizerTaskKey) || null) : null),
+    [activePromptOptimizerTaskKey, promptOptimizerTasks],
+  )
+
+  const latestPromptOptimizerResult = useMemo(() => {
+    if (!activePromptOptimizerTask) return null
+    for (let index = activePromptOptimizerTask.messages.length - 1; index >= 0; index -= 1) {
+      const message = activePromptOptimizerTask.messages[index]
+      if (message?.role !== 'assistant') continue
+      const content = extractMessageContent(message)
+      const text = content.lines.join('\n\n').trim()
+      if (!text) continue
+      return {
+        messageId: message.id,
+        text,
+      }
+    }
+    return null
+  }, [activePromptOptimizerTask])
+
+  const promptOptimizerStatuses = useMemo(() => {
+    const next = new Map<string, PromptOptimizerUiStatus>()
+    for (const [taskKey, task] of promptOptimizerTasks.entries()) {
+      next.set(taskKey, getPromptOptimizerTaskUiStatus(task))
+    }
+    return next
+  }, [promptOptimizerTasks])
+
+  const handlePromptOptimizerInputChange = useCallback((value: string) => {
+    if (!activePromptOptimizerTaskKey) return
+    setPromptOptimizerTasks((previous) => {
+      const task = previous.get(activePromptOptimizerTaskKey)
+      if (!task || task.input === value) return previous
+      const next = new Map(previous)
+      next.set(activePromptOptimizerTaskKey, {
+        ...task,
+        input: value,
+      })
+      return next
+    })
+  }, [activePromptOptimizerTaskKey])
+
+  const handlePromptOptimizerSend = useCallback(async () => {
+    if (!activePromptOptimizerTaskKey) return
+    const task = promptOptimizerTasks.get(activePromptOptimizerTaskKey)
+    const chat = promptOptimizerChatsRef.current.get(activePromptOptimizerTaskKey)
+    if (!task || !chat || task.pending) return
+    const text = task.input.trim()
+    if (!text) return
+    setPromptOptimizerTasks((previous) => {
+      const current = previous.get(activePromptOptimizerTaskKey)
+      if (!current) return previous
+      const next = new Map(previous)
+      next.set(activePromptOptimizerTaskKey, {
+        ...current,
+        input: '',
+      })
+      return next
+    })
+    await chat.sendMessage({ text })
+  }, [activePromptOptimizerTaskKey, promptOptimizerTasks])
+
+  const handleStopPromptOptimizer = useCallback(() => {
+    if (!activePromptOptimizerTaskKey) return
+    promptOptimizerChatsRef.current.get(activePromptOptimizerTaskKey)?.stop()
+  }, [activePromptOptimizerTaskKey])
+
+  const handleDiscardPromptOptimizer = useCallback(() => {
+    if (!activePromptOptimizerTaskKey) return
+    removePromptOptimizerTask(activePromptOptimizerTaskKey)
+  }, [activePromptOptimizerTaskKey, removePromptOptimizerTask])
+
+  const handleRetryPromptOptimizer = useCallback(() => {
+    if (!activePromptOptimizerTask) return
+    const {
+      taskKey,
+      storyboardId,
+      panelIndex,
+      panelKey,
+      promptField,
+      shotNumber,
+      panelContextJson,
+      initialMessage,
+      sourceFingerprint,
+    } = activePromptOptimizerTask
+    removePromptOptimizerTask(taskKey)
+    promptOptimizerRequestCounterRef.current += 1
+    createPromptOptimizerTask({
+      taskKey,
+      requestKey: promptOptimizerRequestCounterRef.current,
+      storyboardId,
+      panelIndex,
+      panelKey,
+      promptField,
+      shotNumber,
+      panelContextJson,
+      initialMessage,
+      sourceFingerprint,
+    })
+  }, [activePromptOptimizerTask, createPromptOptimizerTask, removePromptOptimizerTask])
+
+  useEffect(() => {
+    const chatInstances = promptOptimizerChatsRef.current
+    const taskUnsubscribers = promptOptimizerUnsubscribersRef.current
+    return () => {
+      for (const chat of chatInstances.values()) {
+        chat.stop()
+      }
+      for (const unsubscribers of taskUnsubscribers.values()) {
+        for (const unsubscribe of unsubscribers) unsubscribe()
+      }
+      chatInstances.clear()
+      taskUnsubscribers.clear()
+    }
+  }, [])
 
   const handleLipSync = useCallback(async (
     storyboardId: string,
@@ -480,6 +746,31 @@ export function useVideoStageRuntime({
     onGenerateVideo: handleGenerateVideoWithImmediateLock,
     t: (key) => t(key as never),
   })
+
+  const handleApplyOptimizedPrompt = useCallback(async (message: UIMessage) => {
+    if (!activePromptOptimizerTask) return
+    const text = extractMessageContent(message).lines.join('\n\n').trim()
+    if (!text) return
+
+    updateLocalPrompt(activePromptOptimizerTask.panelKey, text, activePromptOptimizerTask.promptField)
+    if (activePromptOptimizerTask.promptField === 'firstLastFramePrompt') {
+      setFlCustomPrompt(activePromptOptimizerTask.panelKey, text)
+    }
+    await savePrompt(
+      activePromptOptimizerTask.storyboardId,
+      activePromptOptimizerTask.panelIndex,
+      activePromptOptimizerTask.panelKey,
+      text,
+      activePromptOptimizerTask.promptField,
+    )
+    removePromptOptimizerTask(activePromptOptimizerTask.taskKey)
+  }, [
+    activePromptOptimizerTask,
+    removePromptOptimizerTask,
+    savePrompt,
+    setFlCustomPrompt,
+    updateLocalPrompt,
+  ])
 
   useEffect(() => {
     if (submittingVideoPanelKeys.size === 0) return
@@ -648,6 +939,7 @@ export function useVideoStageRuntime({
         getLocalPrompt={getLocalPrompt}
         updateLocalPrompt={updateLocalPrompt}
         savePrompt={savePrompt}
+        promptOptimizerStatuses={promptOptimizerStatuses}
         onOpenPromptOptimizer={handleOpenPromptOptimizer}
       />
 
@@ -713,8 +1005,8 @@ export function useVideoStageRuntime({
       )}
 
       <AssistantChatModal
-        open={promptOptimizerSession !== null}
-        title={t('promptOptimizer.title', { number: promptOptimizerSession?.shotNumber || 0 })}
+        open={activePromptOptimizerTask !== null}
+        title={t('promptOptimizer.title', { number: activePromptOptimizerTask?.shotNumber || 0 })}
         subtitle={t('promptOptimizer.subtitle')}
         closeLabel={t('promptOptimizer.close')}
         userLabel={t('promptOptimizer.userLabel')}
@@ -726,13 +1018,53 @@ export function useVideoStageRuntime({
         inputPlaceholder={t('promptOptimizer.inputPlaceholder')}
         sendLabel={t('promptOptimizer.send')}
         pendingLabel={t('promptOptimizer.pending')}
-        messages={promptOptimizerChat.messages}
-        input={promptOptimizerChat.input}
-        pending={promptOptimizerChat.pending}
-        errorMessage={promptOptimizerChat.error?.message}
+        stopLabel={t('panelCard.cancel')}
+        messages={activePromptOptimizerTask?.messages || []}
+        input={activePromptOptimizerTask?.input || ''}
+        pending={activePromptOptimizerTask?.pending || false}
+        errorMessage={activePromptOptimizerTask?.error?.message}
         onClose={handleClosePromptOptimizer}
-        onInputChange={promptOptimizerChat.setInput}
-        onSend={() => { void promptOptimizerChat.send() }}
+        onInputChange={handlePromptOptimizerInputChange}
+        onSend={() => { void handlePromptOptimizerSend() }}
+        onStop={handleStopPromptOptimizer}
+        footerActions={
+          activePromptOptimizerTask?.error && !activePromptOptimizerTask.pending ? (
+            <button
+              type="button"
+              onClick={handleRetryPromptOptimizer}
+              className="glass-btn-base glass-btn-secondary px-3 py-2 text-sm font-medium"
+            >
+              {t('panelCard.retry')}
+            </button>
+          ) : undefined
+        }
+        renderMessageActions={(message) => {
+          if (message.role !== 'assistant') return null
+          if (activePromptOptimizerTask?.pending) return null
+          if (!latestPromptOptimizerResult || latestPromptOptimizerResult.messageId !== message.id) return null
+          return (
+            <>
+              <button
+                type="button"
+                onClick={handleDiscardPromptOptimizer}
+                className="glass-btn-base glass-btn-secondary px-3 py-1.5 text-xs font-medium"
+              >
+                {t('promptOptimizer.discard')}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const sourceMessage = activePromptOptimizerTask?.messages.find((item) => item.id === message.id)
+                  if (!sourceMessage) return
+                  void handleApplyOptimizedPrompt(sourceMessage)
+                }}
+                className="glass-btn-base glass-btn-primary px-3 py-1.5 text-xs font-medium"
+              >
+                使用该提示词
+              </button>
+            </>
+          )
+        }}
       />
 
       {previewImage && <ImagePreviewModal imageUrl={previewImage} onClose={closePreviewImage} />}

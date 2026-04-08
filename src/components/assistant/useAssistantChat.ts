@@ -123,6 +123,7 @@ export interface UseAssistantChatResult {
   error: Error | undefined
   setInput: (value: string) => void
   send: (content?: string) => Promise<void>
+  stop: () => void
   clear: () => void
 }
 
@@ -199,6 +200,7 @@ export function useAssistantChat(params: UseAssistantChatParams): UseAssistantCh
   }, [chat, input, params.enabled, pending])
 
   const clear = useCallback(() => {
+    chat.stop()
     chat.setMessages([])
     chat.clearError()
     setInput('')
@@ -219,6 +221,7 @@ export function useAssistantChat(params: UseAssistantChatParams): UseAssistantCh
     error: chat.error,
     setInput,
     send,
+    stop: chat.stop,
     clear,
   }
 }

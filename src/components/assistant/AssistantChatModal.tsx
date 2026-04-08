@@ -1,7 +1,7 @@
 'use client'
 
 import type { UIMessage } from 'ai'
-import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react'
+import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from 'react'
 import { Conversation, ConversationContent, ConversationScrollButton } from '@/components/ai-elements/conversation'
 import { Message, MessageContent, MessageResponse } from '@/components/ai-elements/message'
 import { Reasoning, ReasoningContent, ReasoningTrigger } from '@/components/ai-elements/reasoning'
@@ -22,6 +22,7 @@ interface AssistantChatModalProps {
   inputPlaceholder: string
   sendLabel: string
   pendingLabel: string
+  stopLabel?: string
   messages: UIMessage[]
   input: string
   pending: boolean
@@ -32,6 +33,9 @@ interface AssistantChatModalProps {
   onClose: () => void
   onInputChange: (value: string) => void
   onSend: () => void
+  onStop?: () => void
+  footerActions?: ReactNode
+  renderMessageActions?: (message: RenderableMessage) => ReactNode
 }
 
 interface ParsedMessageContent {
@@ -281,6 +285,7 @@ export function AssistantChatModal({
   inputPlaceholder,
   sendLabel,
   pendingLabel,
+  stopLabel,
   messages,
   input,
   pending,
@@ -291,6 +296,9 @@ export function AssistantChatModal({
   onClose,
   onInputChange,
   onSend,
+  onStop,
+  footerActions,
+  renderMessageActions,
 }: AssistantChatModalProps) {
   const [expandedReasoningByMessageId, setExpandedReasoningByMessageId] = useState<Record<string, boolean>>({})
   const messageCacheRef = useRef(new Map<string, MessageCacheEntry>())
@@ -463,6 +471,12 @@ export function AssistantChatModal({
                             </ToolContent>
                           </Tool>
                         ))}
+
+                        {renderMessageActions && (
+                          <div className="mt-3 flex flex-wrap justify-end gap-2">
+                            {renderMessageActions(message)}
+                          </div>
+                        )}
                       </MessageContent>
                     </Message>
                   )
@@ -517,6 +531,16 @@ export function AssistantChatModal({
                 >
                   {pending ? pendingLabel : sendLabel}
                 </button>
+                {pending && onStop && (
+                  <button
+                    type="button"
+                    onClick={onStop}
+                    className="glass-btn-base glass-btn-secondary px-3 py-2 text-sm font-medium"
+                  >
+                    {stopLabel || '停止'}
+                  </button>
+                )}
+                {footerActions}
               </>
             )}
           </div>
