@@ -24,6 +24,8 @@ export interface WorkspaceStageRuntimeValue {
   videoRatio: string | null | undefined
   artStyle: string | null | undefined
   videoModel: string | null | undefined
+  videoPromptPrefix: string
+  videoPromptSuffix: string
   capabilityOverrides: CapabilitySelections
   userVideoModels: WorkspaceStageVideoModelOption[]
   onNovelTextChange: (value: string) => Promise<void>

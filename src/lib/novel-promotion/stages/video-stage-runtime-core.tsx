@@ -149,6 +149,8 @@ export function useVideoStageRuntime({
   defaultVideoModel,
   capabilityOverrides,
   videoRatio = '16:9',
+  videoPromptPrefix = '',
+  videoPromptSuffix = '',
   userVideoModels,
   onGenerateVideo,
   onGenerateAllVideos,
@@ -908,6 +910,8 @@ export function useVideoStageRuntime({
         videoRatio={videoRatio}
         defaultVideoModel={defaultVideoModel}
         capabilityOverrides={capabilityOverrides}
+        videoPromptPrefix={videoPromptPrefix}
+        videoPromptSuffix={videoPromptSuffix}
         userVideoModels={normalVideoModelOptions}
         projectId={projectId}
         episodeId={episodeId}

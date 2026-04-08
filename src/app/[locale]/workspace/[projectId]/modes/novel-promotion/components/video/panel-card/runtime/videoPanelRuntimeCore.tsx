@@ -16,6 +16,8 @@ export function useVideoPanelActions({
   defaultVideoModel,
   capabilityOverrides,
   videoRatio = '16:9',
+  videoPromptPrefix = '',
+  videoPromptSuffix = '',
   userVideoModels,
   projectId,
   episodeId,
@@ -146,6 +148,8 @@ export function useVideoPanelActions({
       flCustomPrompt,
       defaultFlPrompt,
       videoRatio,
+      videoPromptPrefix,
+      videoPromptSuffix,
     },
     actions: {
       onOptimizePrompt,

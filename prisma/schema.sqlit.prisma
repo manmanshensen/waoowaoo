@@ -247,6 +247,8 @@ model NovelPromotionProject {
   videoRatio      String                    @default("9:16")
   ttsRate         String                    @default("+50%")
   globalAssetText String?
+  videoPromptPrefix String?
+  videoPromptSuffix String?
   artStyle        String                    @default("american-comic")
   artStylePrompt  String?
   characterModel  String? // 用户配置的角色图片模型

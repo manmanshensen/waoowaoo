@@ -51,6 +51,8 @@ export function useWorkspaceProjectSnapshot({
       videoModel: projectData?.videoModel,
       audioModel: projectData?.audioModel,
       videoRatio: projectData?.videoRatio,
+      videoPromptPrefix: projectData?.videoPromptPrefix || '',
+      videoPromptSuffix: projectData?.videoPromptSuffix || '',
       capabilityOverrides,
       ttsRate: projectData?.ttsRate,
       artStyle: projectData?.artStyle,

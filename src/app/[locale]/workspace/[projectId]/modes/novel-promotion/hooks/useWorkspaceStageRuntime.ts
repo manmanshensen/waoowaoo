@@ -16,6 +16,8 @@ interface UseWorkspaceStageRuntimeParams {
   videoRatio: string | undefined
   artStyle: string | undefined
   videoModel: string | undefined
+  videoPromptPrefix: string
+  videoPromptSuffix: string
   capabilityOverrides: CapabilitySelections
   userVideoModels: Array<{
     value: string
@@ -66,6 +68,8 @@ export function useWorkspaceStageRuntime({
   videoRatio,
   artStyle,
   videoModel,
+  videoPromptPrefix,
+  videoPromptSuffix,
   capabilityOverrides,
   userVideoModels,
   handleUpdateEpisode,
@@ -96,6 +100,8 @@ export function useWorkspaceStageRuntime({
     videoRatio,
     artStyle,
     videoModel,
+    videoPromptPrefix,
+    videoPromptSuffix,
     capabilityOverrides,
     userVideoModels: resolvedUserVideoModels,
     onNovelTextChange: (value) => handleUpdateEpisode('novelText', value),
@@ -139,6 +145,8 @@ export function useWorkspaceStageRuntime({
     resolvedUserVideoModels,
     capabilityOverrides,
     videoModel,
+    videoPromptPrefix,
+    videoPromptSuffix,
     videoRatio,
   ])
 }

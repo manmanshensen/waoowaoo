@@ -321,6 +321,7 @@ export const PATCH = apiHandler(async (
     'editModel', 'videoModel', 'audioModel', 'videoRatio', 'artStyle',
     'ttsRate', 'lipSyncEnabled', 'lipSyncMode', 'capabilityOverrides', 'combinedStoryboardResolution',
     'combinedStoryboard1x1Resolution', 'combinedStoryboard2x2Resolution', 'combinedStoryboard3x3Resolution',
+    'videoPromptPrefix', 'videoPromptSuffix',
   ] as const
 
   const updateData: Record<string, unknown> = {}

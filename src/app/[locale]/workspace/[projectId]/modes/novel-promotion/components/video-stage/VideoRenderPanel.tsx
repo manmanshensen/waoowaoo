@@ -12,6 +12,8 @@ interface VideoRenderPanelProps {
   videoRatio: string
   defaultVideoModel: string
   capabilityOverrides: CapabilitySelections
+  videoPromptPrefix?: string
+  videoPromptSuffix?: string
   userVideoModels?: VideoModelOption[]
   projectId: string
   episodeId: string
@@ -82,6 +84,8 @@ export default function VideoRenderPanel({
   videoRatio,
   defaultVideoModel,
   capabilityOverrides,
+  videoPromptPrefix,
+  videoPromptSuffix,
   userVideoModels,
   projectId,
   episodeId,
@@ -159,6 +163,8 @@ export default function VideoRenderPanel({
                 defaultVideoModel={defaultVideoModel}
                 capabilityOverrides={capabilityOverrides}
                 videoRatio={videoRatio}
+                videoPromptPrefix={videoPromptPrefix}
+                videoPromptSuffix={videoPromptSuffix}
                 userVideoModels={userVideoModels}
                 projectId={projectId}
                 episodeId={episodeId}

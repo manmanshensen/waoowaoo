@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslations } from 'next-intl'
 import {
     ART_STYLES,
@@ -58,6 +58,8 @@ interface SettingsModalProps {
     videoModel?: string
     audioModel?: string
     videoRatio?: string
+    videoPromptPrefix?: string
+    videoPromptSuffix?: string
     capabilityOverrides?: CapabilitySelections
     ttsRate?: string
     onArtStyleChange?: (value: string) => void
@@ -76,6 +78,8 @@ interface SettingsModalProps {
     onVideoModelChange?: (value: string) => void
     onAudioModelChange?: (value: string) => void
     onVideoRatioChange?: (value: string) => void
+    onVideoPromptPrefixChange?: (value: string) => void
+    onVideoPromptSuffixChange?: (value: string) => void
     onCapabilityOverridesChange?: (value: CapabilitySelections) => void
     onTTSRateChange?: (value: string) => void
 }
@@ -154,6 +158,8 @@ export function SettingsModal({
     videoModel,
     audioModel,
     videoRatio = '9:16',
+    videoPromptPrefix = '',
+    videoPromptSuffix = '',
     capabilityOverrides,
     ttsRate,
     onArtStyleChange,
@@ -171,11 +177,17 @@ export function SettingsModal({
     onVideoModelChange,
     onAudioModelChange,
     onVideoRatioChange,
+    onVideoPromptPrefixChange,
+    onVideoPromptSuffixChange,
     onCapabilityOverridesChange,
     onTTSRateChange,
 }: SettingsModalProps) {
     const t = useTranslations('configModal')
     const [saveStatus, setSaveStatus] = useState<'idle' | 'saved'>('idle')
+    const [videoPromptPrefixDraft, setVideoPromptPrefixDraft] = useState(videoPromptPrefix)
+    const [videoPromptSuffixDraft, setVideoPromptSuffixDraft] = useState(videoPromptSuffix)
+    const [isSavingVideoPromptWrapper, setIsSavingVideoPromptWrapper] = useState(false)
+    const wasOpenRef = useRef(false)
     const userModels = useMemo<UserModels>(() => ({
         llm: Array.isArray(availableModels?.llm) ? availableModels.llm : [],
         image: Array.isArray(availableModels?.image) ? availableModels.image : [],
@@ -359,13 +371,18 @@ export function SettingsModal({
     void onTTSRateChange
 
     useEffect(() => {
+        if (isOpen && !wasOpenRef.current) {
+            setVideoPromptPrefixDraft(videoPromptPrefix)
+            setVideoPromptSuffixDraft(videoPromptSuffix)
+        }
+        wasOpenRef.current = isOpen
         if (!isOpen) return
         const handleKeyDown = (e: KeyboardEvent) => {
             if (e.key === 'Escape') onClose()
         }
         document.addEventListener('keydown', handleKeyDown)
         return () => document.removeEventListener('keydown', handleKeyDown)
-    }, [isOpen, onClose])
+    }, [isOpen, videoPromptPrefix, videoPromptSuffix])
 
     const showSaved = () => {
         setSaveStatus('saved')
@@ -375,6 +392,29 @@ export function SettingsModal({
     const handleChange = (callback?: (value: string) => void) => (value: string) => {
         callback?.(value)
         showSaved()
+    }
+
+    const isVideoPromptWrapperDirty =
+        videoPromptPrefixDraft !== videoPromptPrefix || videoPromptSuffixDraft !== videoPromptSuffix
+
+    async function handleSaveVideoPromptWrapper() {
+        if (isSavingVideoPromptWrapper) return
+        setIsSavingVideoPromptWrapper(true)
+        try {
+            if (onVideoPromptPrefixChange) {
+                await onVideoPromptPrefixChange(videoPromptPrefixDraft)
+            }
+            if (onVideoPromptSuffixChange) {
+                await onVideoPromptSuffixChange(videoPromptSuffixDraft)
+            }
+            showSaved()
+        } finally {
+            setIsSavingVideoPromptWrapper(false)
+        }
+    }
+
+    function handleCloseModal() {
+        onClose()
     }
 
     const handleCombinedLayoutModelChange = (
@@ -402,7 +442,7 @@ export function SettingsModal({
         <div
             className="fixed inset-0 z-[100] flex items-center justify-center glass-overlay animate-fadeIn"
             onClick={(e) => {
-                if (e.target === e.currentTarget) onClose()
+                if (e.target === e.currentTarget) handleCloseModal()
             }}
         >
             <div className="glass-surface-modal p-7 w-full max-w-3xl transform transition-all scale-100 max-h-[90vh] flex flex-col">
@@ -426,7 +466,7 @@ export function SettingsModal({
                             )}
                         </div>
                         <button
-                            onClick={onClose}
+                            onClick={handleCloseModal}
                             className="glass-btn-base glass-btn-soft rounded-full p-2 text-[var(--glass-text-tertiary)] hover:text-[var(--glass-text-secondary)]"
                         >
                             <AppIcon name="close" className="w-6 h-6" />
@@ -679,6 +719,41 @@ export function SettingsModal({
                                     }}
                                     placeholder={t('pleaseSelect')}
                                 />
+                            </div>
+
+                            <div className="space-y-2 md:col-span-2">
+                                <label className="text-sm font-medium text-[var(--glass-text-secondary)]">{t('videoPromptPrefix')}</label>
+                                <textarea
+                                    value={videoPromptPrefixDraft}
+                                    onChange={(event) => setVideoPromptPrefixDraft(event.target.value)}
+                                    rows={3}
+                                    placeholder={t('videoPromptPrefixHint')}
+                                    className="w-full rounded-2xl border border-[var(--glass-border)] bg-[var(--glass-surface)] px-3 py-2 text-sm text-[var(--glass-text-primary)] outline-none resize-y min-h-[88px]"
+                                />
+                                <p className="text-xs text-[var(--glass-text-tertiary)]">{t('videoPromptPrefixHint')}</p>
+                            </div>
+
+                            <div className="space-y-2 md:col-span-2">
+                                <label className="text-sm font-medium text-[var(--glass-text-secondary)]">{t('videoPromptSuffix')}</label>
+                                <textarea
+                                    value={videoPromptSuffixDraft}
+                                    onChange={(event) => setVideoPromptSuffixDraft(event.target.value)}
+                                    rows={3}
+                                    placeholder={t('videoPromptSuffixHint')}
+                                    className="w-full rounded-2xl border border-[var(--glass-border)] bg-[var(--glass-surface)] px-3 py-2 text-sm text-[var(--glass-text-primary)] outline-none resize-y min-h-[88px]"
+                                />
+                                <p className="text-xs text-[var(--glass-text-tertiary)]">{t('videoPromptSuffixHint')}</p>
+                            </div>
+
+                            <div className="md:col-span-2 flex justify-end">
+                                <button
+                                    type="button"
+                                    onClick={() => void handleSaveVideoPromptWrapper()}
+                                    disabled={!isVideoPromptWrapperDirty || isSavingVideoPromptWrapper}
+                                    className="glass-btn-base glass-btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    {isSavingVideoPromptWrapper ? t('savingVideoPromptWrapper') : t('saveVideoPromptWrapper')}
+                                </button>
                             </div>
                         </div>
                     </div>

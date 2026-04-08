@@ -51,7 +51,11 @@ export default function VideoPanelCardBody({ runtime }: VideoPanelCardBodyProps)
   const showsPromptEditor = !layout.isLastFrame || layout.isLinked
   const showsFirstLastFrameActions = layout.isLinked && !!layout.nextPanel
   const [copySucceeded, setCopySucceeded] = useState(false)
-  const promptToCopy = promptEditor.localPrompt.trim()
+  const promptToCopy = [
+    layout.videoPromptPrefix?.trim() || '',
+    promptEditor.localPrompt.trim(),
+    layout.videoPromptSuffix?.trim() || '',
+  ].filter(Boolean).join('\n\n')
   const promptOptimizerStatus = promptEditor.promptOptimizerStatus || 'idle'
 
   const promptOptimizerLabel = (() => {

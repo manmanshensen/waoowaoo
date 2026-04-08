@@ -160,6 +160,8 @@ export function useNovelPromotionWorkspaceController({
     videoRatio: projectSnapshot.videoRatio,
     artStyle: projectSnapshot.artStyle,
     videoModel: projectSnapshot.videoModel,
+    videoPromptPrefix: projectSnapshot.videoPromptPrefix,
+    videoPromptSuffix: projectSnapshot.videoPromptSuffix,
     capabilityOverrides: projectSnapshot.capabilityOverrides,
     userVideoModels: userModels.userVideoModels || [],
     handleUpdateEpisode: configActions.handleUpdateEpisode,

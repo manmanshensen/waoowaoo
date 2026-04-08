@@ -42,6 +42,8 @@ export interface VideoStageShellProps {
   defaultVideoModel: string
   capabilityOverrides: CapabilitySelections
   videoRatio?: string
+  videoPromptPrefix?: string
+  videoPromptSuffix?: string
   userVideoModels?: VideoModelOption[]
   onGenerateVideo: (
     storyboardId: string,

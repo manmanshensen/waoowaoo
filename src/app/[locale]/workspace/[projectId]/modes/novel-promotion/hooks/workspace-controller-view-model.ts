@@ -36,6 +36,8 @@ interface ProjectSnapshotInput {
   videoModel: string | undefined
   audioModel: string | undefined
   videoRatio: string | undefined
+  videoPromptPrefix: string
+  videoPromptSuffix: string
   capabilityOverrides: CapabilitySelections
   ttsRate: string | number | undefined
   artStyle: string | undefined

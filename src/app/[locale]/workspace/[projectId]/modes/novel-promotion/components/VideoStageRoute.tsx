@@ -28,6 +28,8 @@ export default function VideoStageRoute() {
       defaultVideoModel={runtime.videoModel || ''}
       capabilityOverrides={runtime.capabilityOverrides}
       videoRatio={runtime.videoRatio ?? undefined}
+      videoPromptPrefix={runtime.videoPromptPrefix}
+      videoPromptSuffix={runtime.videoPromptSuffix}
       userVideoModels={runtime.userVideoModels}
       onGenerateVideo={runtime.onGenerateVideo}
       onGenerateAllVideos={runtime.onGenerateAllVideos}

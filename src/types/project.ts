@@ -260,6 +260,8 @@ export interface NovelPromotionProject {
   videoModel: string
   audioModel: string
   videoRatio: string
+  videoPromptPrefix?: string | null
+  videoPromptSuffix?: string | null
   capabilityOverrides?: CapabilitySelections | string | null
   ttsRate: string
   workflowMode: WorkflowMode  // 新增：工作流模式
