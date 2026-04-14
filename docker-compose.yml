@@ -239,6 +239,7 @@ services:
     command: >
       sh -c "
         touch /app/.env &&
+        npm run db:sync &&
         npm run storage:init &&
         {
           (sleep 20 && sh /app/scripts/dev-warmup.sh) &

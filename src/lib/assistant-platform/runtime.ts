@@ -3,8 +3,8 @@ import {
   safeValidateUIMessages,
   stepCountIs,
   streamText,
-  type CoreMessage,
   type LanguageModel,
+  type ModelMessage,
   type UIMessage,
 } from 'ai'
 import { createOpenAI } from '@ai-sdk/openai'
@@ -45,7 +45,7 @@ function normalizeAssistantContext(raw: unknown): AssistantContext {
   }
 }
 
-async function toModelMessages(messages: UIMessage[]): Promise<CoreMessage[]> {
+async function toModelMessages(messages: UIMessage[]): Promise<ModelMessage[]> {
   const withoutIds = messages.map((message) => {
     const { id: _id, ...rest } = message
     void _id
@@ -54,7 +54,7 @@ async function toModelMessages(messages: UIMessage[]): Promise<CoreMessage[]> {
   return await convertToModelMessages(withoutIds)
 }
 
-function withSystemPrompt(messages: CoreMessage[], systemPrompt: string): CoreMessage[] {
+function withSystemPrompt(messages: ModelMessage[], systemPrompt: string): ModelMessage[] {
   const normalizedPrompt = systemPrompt.trim()
   if (!normalizedPrompt) return messages
   return [{ role: 'system', content: normalizedPrompt }, ...messages]

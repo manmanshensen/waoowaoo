@@ -2,7 +2,7 @@ import { logInfo as _ulogInfo } from '@/lib/logging/core'
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getSignedUrl, generateUniqueKey, downloadAndUploadImage, toFetchableUrl } from '@/lib/storage'
-import { resolveStorageKeyFromMediaValue } from '@/lib/media/service'
+import { ensureMediaObjectFromStorageKey, resolveStorageKeyFromMediaValue } from '@/lib/media/service'
 import { requireProjectAuthLight, isErrorResponse } from '@/lib/api-auth'
 import { apiHandler, ApiError } from '@/lib/api-errors'
 
@@ -114,13 +114,17 @@ export const POST = apiHandler(async (
     finalImageKey = await downloadAndUploadImage(sourceUrl, cosKey)
   }
 
+  const media = await ensureMediaObjectFromStorageKey(finalImageKey)
   const signedUrl = getSignedUrl(finalImageKey, 7 * 24 * 3600)
 
   // 更新 Panel：设置新图片，清空候选列表
   await prisma.novelPromotionPanel.update({
     where: { id: panelId },
     data: {
+      previousImageUrl: panel.imageUrl || null,
+      previousImageMediaId: panel.imageMediaId || null,
       imageUrl: finalImageKey,
+      imageMediaId: media.id,
       imageHistory: JSON.stringify(currentHistory),
       candidateImages: null
     }
